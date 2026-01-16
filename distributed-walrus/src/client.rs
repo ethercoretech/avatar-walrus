@@ -7,6 +7,37 @@ use tracing::{info, warn};
 
 const MAX_FRAME_LEN: usize = 64 * 1024;
 
+/// 将hexstring (如 "0x1234" 或 "0X1234") 解析为字节数组
+fn parse_hexstring(s: &str) -> Result<Vec<u8>> {
+    let hex_part = s.strip_prefix("0x")
+        .or_else(|| s.strip_prefix("0X"))
+        .ok_or_else(|| anyhow!("hexstring must start with 0x or 0X"))?;
+
+    // 处理奇数长度的hex字符串，在前面补0
+    let hex_clean = if hex_part.len() % 2 == 1 {
+        format!("0{}", hex_part)
+    } else {
+        hex_part.to_string()
+    };
+
+    let mut bytes = Vec::new();
+    for i in (0..hex_clean.len()).step_by(2) {
+        let byte_str = &hex_clean[i..i + 2];
+        let byte = u8::from_str_radix(byte_str, 16)
+            .map_err(|e| anyhow!("invalid hex byte '{}': {}", byte_str, e))?;
+        bytes.push(byte);
+    }
+
+    Ok(bytes)
+}
+
+/// 将字节数组编码为hexstring格式 (如 "0x1234")
+fn encode_hexstring(bytes: &[u8]) -> String {
+    format!("0x{}", bytes.iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>())
+}
+
 pub async fn start_client_listener(
     controller: Arc<NodeController>,
     bind_addr: String,
@@ -83,9 +114,15 @@ async fn handle_command(line: &str, controller: Arc<NodeController>) -> Result<S
             let payload = parts
                 .next()
                 .ok_or_else(|| anyhow!("PUT requires a payload"))?;
-            controller
-                .append_for_topic(topic, payload.as_bytes().to_vec())
-                .await?;
+
+            // 只接受hexstring格式（必须以0x或0X开头）
+            if !payload.starts_with("0x") && !payload.starts_with("0X") {
+                return Err(anyhow!("payload must be hexstring format (start with 0x or 0X)"));
+            }
+
+            // 解析hexstring为字节数组并直接存储
+            let bytes = parse_hexstring(payload)?;
+            controller.append_for_topic(topic, bytes).await?;
             Ok("OK".into())
         }
         "GET" => {
@@ -93,7 +130,11 @@ async fn handle_command(line: &str, controller: Arc<NodeController>) -> Result<S
                 .next()
                 .ok_or_else(|| anyhow!("GET requires a topic"))?;
             match controller.read_one_for_topic_shared(topic).await? {
-                Some(bytes) => Ok(format!("OK {}", String::from_utf8_lossy(&bytes))),
+                Some(bytes) => {
+                    // 总是将字节数组编码为hexstring格式返回
+                    let hexstring = encode_hexstring(&bytes);
+                    Ok(format!("OK {}", hexstring))
+                }
                 None => Ok("EMPTY".into()),
             }
         }

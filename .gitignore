@@ -11,3 +11,4 @@ distributed-walrus/tests/__pycache__/
 distributed-walrus/target/
 distributed-walrus/.venv/
 distributed-walrus/test_data/
+distributed-walrus/data/

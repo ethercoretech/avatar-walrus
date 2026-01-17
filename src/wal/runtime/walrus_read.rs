@@ -743,8 +743,8 @@ impl Walrus {
                                             };
                                             let meta2_res: Result<Metadata, _> =
                                                 archived2.deserialize(&mut rkyv::Infallible);
-                                            let meta2 = meta2_res
-                                                .expect("infallible metadata deserialize");
+                                            let meta2 =
+                                                meta2_res.expect("infallible metadata deserialize");
                                             let size2 = meta2.read_size;
                                             let required2 = (PREFIX_META_SIZE + size2) as u64;
                                             final_required = required1 + required2;

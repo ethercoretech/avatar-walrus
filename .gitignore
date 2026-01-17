@@ -17,3 +17,5 @@ block-producer/target/
 tx-generator/target/
 .idea
 .vscode
+
+prompt_assistance.md

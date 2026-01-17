@@ -7,6 +7,7 @@ use jsonrpsee::server::{Server, ServerHandle};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
+use sha2::{Digest, Sha256};
 
 /// RPC Gateway
 /// 
@@ -118,11 +119,11 @@ impl WalrusRpcApiServer for WalrusRpcServer {
                 None::<String>,
             ))?;
 
-        // 返回伪造的交易哈希（实际应该从交易内容生成）
-        use std::hash::{Hash, Hasher};
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        hex_data.hash(&mut hasher);
-        let tx_hash = format!("0x{:x}", hasher.finish());
+        // 返回稳定的交易哈希（基于写入 Walrus 的数据计算）
+        let mut hasher = Sha256::new();
+        hasher.update(hex_data.as_bytes());
+        let hash_bytes = hasher.finalize();
+        let tx_hash = format!("0x{}", hex::encode(hash_bytes));
         
         info!("交易已写入 Walrus, hash: {}", tx_hash);
         Ok(tx_hash)
@@ -148,11 +149,11 @@ impl WalrusRpcApiServer for WalrusRpcServer {
                 None::<String>,
             ))?;
 
-        // 返回交易哈希
-        use std::hash::{Hash, Hasher};
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        hex_data.hash(&mut hasher);
-        let tx_hash = format!("0x{:x}", hasher.finish());
+        // 返回交易哈希（基于写入 Walrus 的数据计算）
+        let mut hasher = Sha256::new();
+        hasher.update(hex_data.as_bytes());
+        let hash_bytes = hasher.finalize();
+        let tx_hash = format!("0x{}", hex::encode(hash_bytes));
         
         info!("原始交易已写入 Walrus, hash: {}", tx_hash);
         Ok(tx_hash)

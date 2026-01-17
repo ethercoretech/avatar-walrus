@@ -13,5 +13,6 @@ distributed-walrus/.venv/
 distributed-walrus/test_data/
 distributed-walrus/data/
 rpc-gateway/target/
+block-producer/target/
 .idea
 .vscode

@@ -8,6 +8,8 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 use sha2::{Digest, Sha256};
+use ethers::types::Transaction as EthTransaction;
+use ethers::utils::rlp;
 
 /// RPC Gateway
 /// 
@@ -85,6 +87,40 @@ impl WalrusRpcServer {
             format!("0x{}", data)
         }
     }
+
+    /// 验证并解析原始交易数据
+    /// 
+    /// 执行两级校验：
+    /// 1. 验证是否为合法的 hex 字符串
+    /// 2. 使用 ethers 解析 RLP 编码的交易结构
+    fn validate_raw_transaction(data: &str) -> Result<Vec<u8>, jsonrpsee::types::ErrorObjectOwned> {
+        // 移除 0x 前缀
+        let hex_str = data.strip_prefix("0x")
+            .or_else(|| data.strip_prefix("0X"))
+            .unwrap_or(data);
+        
+        // 第一步：验证是否为有效的 hex 字符串
+        let raw_bytes = hex::decode(hex_str)
+            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
+                -32602,  // Invalid params
+                format!("无效的十六进制数据: {}", e),
+                None::<String>,
+            ))?;
+        
+        // 第二步：尝试使用 ethers 解析 RLP 编码的交易
+        // 这会验证交易结构的完整性
+        let _tx: EthTransaction = rlp::decode(&raw_bytes)
+            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
+                -32602,  // Invalid params  
+                format!("无效的交易格式 (RLP 解析失败): {}", e),
+                None::<String>,
+            ))?;
+        
+        info!("✅ 交易验证通过: from={:?}, to={:?}, value={}", 
+              _tx.from, _tx.to, _tx.value);
+        
+        Ok(raw_bytes)
+    }
 }
 
 #[async_trait]
@@ -131,6 +167,9 @@ impl WalrusRpcApiServer for WalrusRpcServer {
 
     async fn send_raw_transaction(&self, data: String) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
         info!("收到原始交易数据: {} bytes", data.len());
+
+        // 验证并解析原始交易（hex + ethers RLP 解析）
+        let _raw_bytes = Self::validate_raw_transaction(&data)?;
 
         let hex_data = Self::ensure_hex_format(&data);
 

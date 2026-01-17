@@ -3,7 +3,7 @@
 
 set -e
 
-RPC_URL="http://localhost:8545"
+RPC_URL="http://127.0.0.1:8545"
 
 echo "🧪 测试 RPC Gateway"
 echo "================================"

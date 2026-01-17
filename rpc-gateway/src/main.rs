@@ -149,7 +149,7 @@ impl WalrusRpcServer {
             )
         })?;
         
-        info!("✅ 交易验证通过: to={:?}, value={}, nonce={}", 
+        info!("✅ Legacy 交易验证通过: to={:?}, value={}, nonce={}", 
               tx.to, tx.value, tx.nonce);
         
         Ok(raw_bytes)
@@ -232,7 +232,21 @@ impl WalrusRpcApiServer for WalrusRpcServer {
     }
 
     async fn health(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
-        Ok("OK".to_string())
+        // 通过调用 Walrus METRICS 命令验证连接状态
+        match self.walrus_client.metrics().await {
+            Ok(_metrics) => {
+                info!("✅ 健康检查通过: Walrus 连接正常");
+                Ok("OK".to_string())
+            }
+            Err(e) => {
+                warn!("❌ 健康检查失败: Walrus 连接异常 - {}", e);
+                Err(jsonrpsee::types::ErrorObjectOwned::owned(
+                    -32003,  // Service unavailable
+                    format!("Walrus 服务不可用: {}", e),
+                    None::<String>,
+                ))
+            }
+        }
     }
 }
 

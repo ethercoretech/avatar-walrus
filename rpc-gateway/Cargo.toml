@@ -17,8 +17,9 @@ jsonrpsee = { version = "0.24", features = ["server", "macros"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-# 以太坊类型 (如果需要解析 MetaMask 交易)
-ethers = { version = "2.0", features = ["legacy"] }
+# RLP 编码解码库（用于解析原始交易）
+alloy-rlp = { version = "0.3.12", features = ["derive"] }
+alloy-primitives = { version = "0.8", features = ["rlp"] }
 
 # 命令行参数
 clap = { version = "4.0", features = ["derive"] }

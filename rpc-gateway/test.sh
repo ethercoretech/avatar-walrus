@@ -50,7 +50,7 @@ RAW_TX_HASH=$(curl -s -X POST $RPC_URL \
   -d '{
     "jsonrpc": "2.0",
     "method": "eth_sendRawTransaction",
-    "params": ["0xf86c808504a817c800825208945aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed880de0b6b3a764000080"],
+    "params": ["0x01f87083aa36a781a384411335328252089483498fca79e0bc0548b4fc0744f467208c54132b872386f26fc1000080c001a0af9fe731ed7ddf89dbbc3966eba6492d2e434644fb246ef5e128f2021f8e0cbba053fef79bc9d54dc466906c41d552531a9f2c03d23e7e216fb2f4db21dddd9328"],
     "id": 3
   }' | jq -r '.result')
 

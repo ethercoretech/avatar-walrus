@@ -8,8 +8,17 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 use sha2::{Digest, Sha256};
-use ethers::types::Transaction as EthTransaction;
-use ethers::utils::rlp;
+use alloy_rlp::{RlpDecodable, Decodable};
+use alloy_primitives::{Address, U256};
+
+/// 以太坊 Legacy 交易结构（用于 RLP 解析）
+#[derive(Debug, RlpDecodable)]
+struct LegacyTransaction {
+    nonce: U256,
+    #[rlp(default)]
+    to: Address,
+    value: U256,
+}
 
 /// RPC Gateway
 /// 
@@ -92,32 +101,56 @@ impl WalrusRpcServer {
     /// 
     /// 执行两级校验：
     /// 1. 验证是否为合法的 hex 字符串
-    /// 2. 使用 ethers 解析 RLP 编码的交易结构
+    /// 2. 对 legacy 交易使用 alloy-rlp 解析 RLP 编码的交易结构
+    ///    对 EIP-2718 typed 交易仅做 hex 校验，避免误判
     fn validate_raw_transaction(data: &str) -> Result<Vec<u8>, jsonrpsee::types::ErrorObjectOwned> {
         // 移除 0x 前缀
-        let hex_str = data.strip_prefix("0x")
+        let hex_str = data
+            .strip_prefix("0x")
             .or_else(|| data.strip_prefix("0X"))
             .unwrap_or(data);
         
         // 第一步：验证是否为有效的 hex 字符串
-        let raw_bytes = hex::decode(hex_str)
-            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
+        let raw_bytes = hex::decode(hex_str).map_err(|e| {
+            jsonrpsee::types::ErrorObjectOwned::owned(
                 -32602,  // Invalid params
                 format!("无效的十六进制数据: {}", e),
                 None::<String>,
-            ))?;
+            )
+        })?;
+
+        if raw_bytes.is_empty() {
+            return Err(jsonrpsee::types::ErrorObjectOwned::owned(
+                -32602,
+                "空的交易数据".to_string(),
+                None::<String>,
+            ));
+        }
+
+        let first_byte = raw_bytes[0];
+
+        // 检测 EIP-2718 typed transaction（0x01..0x7f）
+        // 这类交易的格式为：<tx_type_byte><RLP(交易字段)>
+        // 我们只做 hex 校验即可，不强制解析为 LegacyTransaction。
+        if first_byte >= 0x01 && first_byte <= 0x7f {
+            info!("✅ 检测到 EIP-2718 typed transaction, tx_type={:#x}, size={} bytes", 
+                  first_byte, raw_bytes.len());
+            return Ok(raw_bytes);
+        }
         
-        // 第二步：尝试使用 ethers 解析 RLP 编码的交易
+        // 第二步：尝试使用 alloy-rlp 解析 RLP 编码的 legacy 交易
         // 这会验证交易结构的完整性
-        let _tx: EthTransaction = rlp::decode(&raw_bytes)
-            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
+        let mut slice = raw_bytes.as_slice();
+        let tx = LegacyTransaction::decode(&mut slice).map_err(|e| {
+            jsonrpsee::types::ErrorObjectOwned::owned(
                 -32602,  // Invalid params  
                 format!("无效的交易格式 (RLP 解析失败): {}", e),
                 None::<String>,
-            ))?;
+            )
+        })?;
         
-        info!("✅ 交易验证通过: from={:?}, to={:?}, value={}", 
-              _tx.from, _tx.to, _tx.value);
+        info!("✅ 交易验证通过: to={:?}, value={}, nonce={}", 
+              tx.to, tx.value, tx.nonce);
         
         Ok(raw_bytes)
     }
@@ -168,7 +201,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
     async fn send_raw_transaction(&self, data: String) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
         info!("收到原始交易数据: {} bytes", data.len());
 
-        // 验证并解析原始交易（hex + ethers RLP 解析）
+        // 验证并解析原始交易（hex + RLP 解析）
         let _raw_bytes = Self::validate_raw_transaction(&data)?;
 
         let hex_data = Self::ensure_hex_format(&data);

@@ -17,5 +17,6 @@ block-producer/target/
 tx-generator/target/
 .idea
 .vscode
-
+.walrus_pids/
+.walrus_logs/
 prompt_assistance.md

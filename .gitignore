@@ -14,5 +14,6 @@ distributed-walrus/test_data/
 distributed-walrus/data/
 rpc-gateway/target/
 block-producer/target/
+tx-generator/target/
 .idea
 .vscode

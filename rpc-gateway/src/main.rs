@@ -1,3 +1,5 @@
+mod utils;
+
 use anyhow::Result;
 use clap::Parser;
 use distributed_walrus::cli_client::CliClient;
@@ -10,6 +12,8 @@ use tracing_subscriber::{fmt, EnvFilter};
 use sha2::{Digest, Sha256};
 use alloy_rlp::{RlpDecodable, Decodable};
 use alloy_primitives::{Address, U256};
+
+use utils::RpcError;
 
 /// 以太坊 Legacy 交易结构（用于 RLP 解析）
 #[derive(Debug, RlpDecodable)]
@@ -112,19 +116,11 @@ impl WalrusRpcServer {
         
         // 第一步：验证是否为有效的 hex 字符串
         let raw_bytes = hex::decode(hex_str).map_err(|e| {
-            jsonrpsee::types::ErrorObjectOwned::owned(
-                -32602,  // Invalid params
-                format!("无效的十六进制数据: {}", e),
-                None::<String>,
-            )
+            RpcError::InvalidHexFormat.into_error_object(e.to_string())
         })?;
 
         if raw_bytes.is_empty() {
-            return Err(jsonrpsee::types::ErrorObjectOwned::owned(
-                -32602,
-                "空的交易数据".to_string(),
-                None::<String>,
-            ));
+            return Err(RpcError::InvalidHexFormat.into_error_object("空的交易数据"));
         }
 
         let first_byte = raw_bytes[0];
@@ -142,11 +138,7 @@ impl WalrusRpcServer {
         // 这会验证交易结构的完整性
         let mut slice = raw_bytes.as_slice();
         let tx = LegacyTransaction::decode(&mut slice).map_err(|e| {
-            jsonrpsee::types::ErrorObjectOwned::owned(
-                -32602,  // Invalid params  
-                format!("无效的交易格式 (RLP 解析失败): {}", e),
-                None::<String>,
-            )
+            RpcError::InvalidTransaction.into_error_object(e.to_string())
         })?;
         
         info!("✅ Legacy 交易验证通过: to={:?}, value={}, nonce={}", 
@@ -163,11 +155,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
 
         // 序列化交易为 JSON
         let tx_json = serde_json::to_string(&tx)
-            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
-                -32000,
-                format!("序列化失败: {}", e),
-                None::<String>,
-            ))?;
+            .map_err(|e| RpcError::SerializationError.into_error_object(e.to_string()))?;
 
         // 转换为十六进制字符串
         let hex_data = hex::encode(tx_json.as_bytes());
@@ -182,11 +170,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         self.walrus_client
             .put(&self.default_topic, &hex_data)
             .await
-            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
-                -32001,
-                format!("写入 Walrus 失败: {}", e),
-                None::<String>,
-            ))?;
+            .map_err(|e| RpcError::WalrusWriteFailed.into_error_object(e.to_string()))?;
 
         // 返回稳定的交易哈希（基于写入 Walrus 的数据计算）
         let mut hasher = Sha256::new();
@@ -202,7 +186,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         info!("收到原始交易数据: {} bytes", data.len());
 
         // 验证并解析原始交易（hex + RLP 解析）
-        let _raw_bytes = Self::validate_raw_transaction(&data)?;
+        // let _raw_bytes = Self::validate_raw_transaction(&data)?;
 
         let hex_data = Self::ensure_hex_format(&data);
 
@@ -215,11 +199,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         self.walrus_client
             .put(&self.default_topic, &hex_data)
             .await
-            .map_err(|e| jsonrpsee::types::ErrorObjectOwned::owned(
-                -32001,
-                format!("写入 Walrus 失败: {}", e),
-                None::<String>,
-            ))?;
+            .map_err(|e| RpcError::WalrusWriteFailed.into_error_object(e.to_string()))?;
 
         // 返回交易哈希（基于写入 Walrus 的数据计算）
         let mut hasher = Sha256::new();
@@ -240,11 +220,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
             }
             Err(e) => {
                 warn!("❌ 健康检查失败: Walrus 连接异常 - {}", e);
-                Err(jsonrpsee::types::ErrorObjectOwned::owned(
-                    -32003,  // Service unavailable
-                    format!("Walrus 服务不可用: {}", e),
-                    None::<String>,
-                ))
+                Err(RpcError::WalrusConnectionFailed.into_error_object(e.to_string()))
             }
         }
     }

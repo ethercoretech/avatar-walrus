@@ -8,6 +8,16 @@ use std::time::Duration;
 use tracing::{info, warn, error};
 use tracing_subscriber::{fmt, EnvFilter};
 
+// === 新增模块 ===
+mod db;
+mod schema;
+mod trie;
+mod executor;
+mod utils;
+
+// 重新导出类型（为了与现有代码兼容）
+use schema::{Block as SchemaBlock, BlockHeader as SchemaBlockHeader, Transaction as SchemaTransaction};
+
 /// 区块生产者（Block Producer）
 /// 
 /// 从 Walrus 集群读取交易，打包成区块，并提交给执行层
@@ -59,6 +69,15 @@ pub struct BlockHeader {
     pub transactions_root: String,
     /// 状态根哈希（执行后更新）
     pub state_root: Option<String>,
+    /// Gas 使用量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_used: Option<u64>,
+    /// Gas 限制
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gas_limit: Option<u64>,
+    /// 收据根哈希
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub receipts_root: Option<String>,
 }
 
 /// 区块
@@ -155,16 +174,19 @@ impl BlockProducer {
             tx_count: transactions.len(),
             transactions_root,
             state_root: None, // 执行后填充
+            gas_used: None,
+            gas_limit: Some(30_000_000), // 默认 gas 限制
+            receipts_root: None,
         };
 
         // 4. 构建区块
-        let block = Block {
+        let mut block = Block {
             header,
             transactions,
         };
 
-        // 5. 提交给执行层
-        self.submit_to_execution_layer(&block).await?;
+        // 5. 提交给执行层（会更新 state_root 和 gas_used）
+        self.submit_to_execution_layer(&mut block).await?;
 
         // 6. 更新状态
         self.last_block_hash = block.hash();
@@ -225,17 +247,42 @@ impl BlockProducer {
     }
 
     /// 提交区块给执行层
-    async fn submit_to_execution_layer(&self, block: &Block) -> Result<()> {
+    async fn submit_to_execution_layer(&self, block: &mut Block) -> Result<()> {
         info!("📦 提交区块 #{} 到执行层...", block.header.number);
         
-        // TODO: 实现执行层接口
-        // 这里是执行层的占位符
+        // TODO: 实现真实的 EVM 执行
+        // 当前使用占位符实现
         // 
-        // 未来可以实现：
-        // 1. EVM 执行引擎
-        // 2. 状态更新
-        // 3. 收据生成
-        // 4. 事件日志
+        // 取消注释以下代码以启用真实 EVM 执行：
+        // 
+        // use crate::db::WalrusStateDB;
+        // use crate::executor::BlockExecutor;
+        // 
+        // // 1. 初始化状态数据库
+        // let state_db = WalrusStateDB::new()?;
+        // 
+        // // 2. 创建区块执行器
+        // let mut executor = BlockExecutor::new(state_db);
+        // 
+        // // 3. 转换区块格式（从旧格式到新格式）
+        // let schema_block = self.convert_to_schema_block(block);
+        // 
+        // // 4. 执行区块
+        // let execution_result = executor.execute_block(&schema_block).await
+        //     .map_err(|e| anyhow::anyhow!("Block execution failed: {}", e))?;
+        // 
+        // // 5. 计算状态根
+        // let state_root = executor.calculate_state_root()
+        //     .map_err(|e| anyhow::anyhow!("State root calculation failed: {}", e))?;
+        // 
+        // // 6. 更新区块头
+        // block.header.state_root = Some(format!("{:?}", state_root));
+        // block.header.gas_used = Some(execution_result.total_gas_used);
+        // 
+        // info!("   ✓ 执行完成: {} 成功, {} 失败",
+        //       execution_result.successful_txs,
+        //       execution_result.failed_txs);
+        // info!("   ✓ 状态根: {}", state_root);
         
         self.execute_block_placeholder(block).await?;
         

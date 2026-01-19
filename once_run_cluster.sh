@@ -155,7 +155,8 @@ echo ""
 # 启动 RPC Gateway
 info "启动 RPC Gateway (端口: 8545)..."
 cd "$RPC_GATEWAY_DIR"
-cargo run --bin rpc-gateway -- \
+# RUST_LOG=INFO
+RUST_LOG=INFO cargo run --bin rpc-gateway -- \
     --walrus-addr 127.0.0.1:9091 \
     --rpc-port 8545 &
 RPC_PID=$!

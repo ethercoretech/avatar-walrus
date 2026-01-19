@@ -9,7 +9,7 @@ use jsonrpsee::server::{Server, ServerHandle};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::OnceCell;
-use tracing::{info, warn, error};
+use tracing::{debug, warn, error};
 use tracing_subscriber::{fmt, EnvFilter};
 use sha2::{Digest, Sha256};
 use alloy_rlp::{RlpDecodable, Decodable};
@@ -104,17 +104,17 @@ impl WalrusRpcServer {
     async fn ensure_topic_registered(&self) -> Result<(), jsonrpsee::types::ErrorObjectOwned> {
         self.topic_registered
             .get_or_try_init(|| async {
-                info!("正在注册 topic: {}", self.default_topic);
+                debug!("正在注册 topic: {}", self.default_topic);
                 match self.walrus_client.register(&self.default_topic).await {
                     Ok(_) => {
-                        info!("✅ Topic '{}' 注册成功", self.default_topic);
+                        debug!("✅ Topic '{}' 注册成功", self.default_topic);
                         Ok(())
                     }
                     Err(e) => {
                         // 检查是否是"已存在"的错误
                         let err_msg = e.to_string();
                         if err_msg.contains("already exists") || err_msg.contains("already registered") {
-                            info!("Topic '{}' 已存在,跳过注册", self.default_topic);
+                            debug!("Topic '{}' 已存在,跳过注册", self.default_topic);
                             // 对于"已存在"的情况,我们认为是成功的
                             Ok(())
                         } else {
@@ -167,7 +167,7 @@ impl WalrusRpcServer {
         // 这类交易的格式为：<tx_type_byte><RLP(交易字段)>
         // 我们只做 hex 校验即可，不强制解析为 LegacyTransaction。
         if first_byte >= 0x01 && first_byte <= 0x7f {
-            info!("✅ 检测到 EIP-2718 typed transaction, tx_type={:#x}, size={} bytes", 
+            debug!("✅ 检测到 EIP-2718 typed transaction, tx_type={:#x}, size={} bytes", 
                   first_byte, raw_bytes.len());
             return Ok(raw_bytes);
         }
@@ -179,7 +179,7 @@ impl WalrusRpcServer {
             RpcError::InvalidTransaction.into_error_object(e.to_string())
         })?;
         
-        info!("✅ Legacy 交易验证通过: to={:?}, value={}, nonce={}", 
+        debug!("✅ Legacy 交易验证通过: to={:?}, value={}, nonce={}", 
               tx.to, tx.value, tx.nonce);
         
         Ok(raw_bytes)
@@ -189,7 +189,7 @@ impl WalrusRpcServer {
 #[async_trait]
 impl WalrusRpcApiServer for WalrusRpcServer {
     async fn send_transaction(&self, tx: Transaction) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
-        info!("收到交易: from={}, to={:?}", tx.from, tx.to);
+        debug!("收到交易: from={}, to={:?}", tx.from, tx.to);
 
         // 序列化交易为 JSON
         let tx_json = serde_json::to_string(&tx)
@@ -214,12 +214,12 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         let hash_bytes = hasher.finalize();
         let tx_hash = format!("0x{}", hex::encode(hash_bytes));
         
-        info!("交易已写入 Walrus, hash: {}", tx_hash);
+        debug!("交易已写入 Walrus, hash: {}", tx_hash);
         Ok(tx_hash)
     }
 
     async fn send_raw_transaction(&self, data: String) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
-        info!("收到原始交易数据: {} bytes", data.len());
+        debug!("收到原始交易数据: {} bytes", data.len());
 
         // 验证并解析原始交易（hex + RLP 解析）
         // let _raw_bytes = Self::validate_raw_transaction(&data)?;
@@ -241,7 +241,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         let hash_bytes = hasher.finalize();
         let tx_hash = format!("0x{}", hex::encode(hash_bytes));
         
-        info!("原始交易已写入 Walrus, hash: {}", tx_hash);
+        debug!("原始交易已写入 Walrus, hash: {}", tx_hash);
         Ok(tx_hash)
     }
 
@@ -249,7 +249,7 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         // 通过调用 Walrus METRICS 命令验证连接状态
         match self.walrus_client.metrics().await {
             Ok(_metrics) => {
-                info!("✅ 健康检查通过: Walrus 连接正常");
+                debug!("✅ 健康检查通过: Walrus 连接正常");
                 Ok("OK".to_string())
             }
             Err(e) => {
@@ -263,9 +263,9 @@ impl WalrusRpcApiServer for WalrusRpcServer {
 async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
     let bind_addr = format!("{}:{}", args.rpc_host, args.rpc_port);
     
-    info!("启动 JSON-RPC 服务器: {}", bind_addr);
-    info!("Walrus 服务器地址: {}", args.walrus_addr);
-    info!("默认 topic: {}", args.default_topic);
+    debug!("启动 JSON-RPC 服务器: {}", bind_addr);
+    debug!("Walrus 服务器地址: {}", args.walrus_addr);
+    debug!("默认 topic: {}", args.default_topic);
 
     let server = Server::builder()
         .build(&bind_addr)
@@ -278,8 +278,8 @@ async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
 
     let handle = server.start(rpc_impl.into_rpc());
 
-    info!("✅ JSON-RPC 服务器已启动，监听地址: {}", bind_addr);
-    info!("💡 可以使用 MetaMask 等钱包连接到此 RPC 端点");
+    debug!("✅ JSON-RPC 服务器已启动，监听地址: {}", bind_addr);
+    debug!("💡 可以使用 MetaMask 等钱包连接到此 RPC 端点");
 
     Ok(handle)
 }
@@ -288,7 +288,7 @@ async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
 async fn main() -> Result<()> {
     // 初始化日志
     fmt::Subscriber::builder()
-        .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
+        .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::DEBUG.into()))
         .init();
 
     let args = Args::parse();

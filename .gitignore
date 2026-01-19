@@ -15,6 +15,10 @@ distributed-walrus/data/
 rpc-gateway/target/
 block-producer/target/
 tx-generator/target/
+tx-generator/generated_keys.json
+tx-generator/*.key
+tx-generator/*.pem
+tx-generator/keys/
 .idea
 .vscode
 .walrus_pids/

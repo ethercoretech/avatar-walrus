@@ -1,12 +1,12 @@
-use anyhow::Result;
-use clap::{Parser, Subcommand};
 use alloy::{
-    consensus::{TxLegacy, TxEnvelope},
+    consensus::{TxEnvelope, TxLegacy},
     eips::eip2718::Encodable2718,
     network::TxSigner,
     primitives::{Address, Bytes, U256},
     signers::local::PrivateKeySigner,
 };
+use anyhow::Result;
+use clap::{Parser, Subcommand};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -14,7 +14,7 @@ use tracing::{info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 
 /// 交易生成器
-/// 
+///
 /// 生成以太坊密钥、签名交易并发送到 RPC Gateway
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -27,36 +27,36 @@ struct Args {
 enum Command {
     /// 生成新的密钥对
     GenerateKey,
-    
+
     /// 生成并发送单笔交易
     SendTx {
         /// 私钥（64 位十六进制，可选 0x 前缀）
         #[arg(long)]
         private_key: String,
-        
+
         /// 接收地址
         #[arg(long)]
         to: String,
-        
+
         /// 转账金额（ETH）
         #[arg(long, default_value = "1.0")]
         value: f64,
-        
+
         /// RPC Gateway 地址
         #[arg(long, default_value = "http://localhost:8545")]
         rpc_url: String,
     },
-    
+
     /// 批量生成测试交易
     BatchGenerate {
         /// 批次大小
         #[arg(long, default_value = "10")]
         count: usize,
-        
+
         /// RPC Gateway 地址
         #[arg(long, default_value = "http://localhost:8545")]
         rpc_url: String,
-        
+
         /// 发送间隔（毫秒）
         #[arg(long, default_value = "100")]
         interval_ms: u64,
@@ -110,11 +110,7 @@ impl TxGenerator {
     }
 
     /// 创建交易
-    fn create_transaction(
-        to: Address,
-        value: U256,
-        nonce: u64,
-    ) -> TxLegacy {
+    fn create_transaction(to: Address, value: U256, nonce: u64) -> TxLegacy {
         TxLegacy {
             chain_id: Some(1337), // 测试链 ID
             nonce,
@@ -127,20 +123,17 @@ impl TxGenerator {
     }
 
     /// 签名交易
-    async fn sign_transaction(
-        signer: &PrivateKeySigner,
-        tx: TxLegacy,
-    ) -> Result<String> {
+    async fn sign_transaction(signer: &PrivateKeySigner, tx: TxLegacy) -> Result<String> {
         // 使用 TxSigner trait 的 sign_transaction 方法
         let signature = signer.sign_transaction(&mut tx.clone()).await?;
-        
+
         // 构建签名的交易 envelope
         let envelope = TxEnvelope::Legacy(alloy::consensus::Signed::new_unchecked(
             tx,
             signature,
             Default::default(),
         ));
-        
+
         // 编码为原始交易
         let encoded = envelope.encoded_2718();
         Ok(format!("0x{}", hex::encode(encoded)))
@@ -200,7 +193,10 @@ impl TxGenerator {
         let nonce = rand::thread_rng().gen::<u32>() as u64;
         let tx = Self::create_transaction(to, value, nonce);
 
-        info!("创建交易: {:?} -> {:?}, 金额: {} ETH", from_address, to, value_eth);
+        info!(
+            "创建交易: {:?} -> {:?}, 金额: {} ETH",
+            from_address, to, value_eth
+        );
 
         // 5. 签名交易
         let raw_tx = Self::sign_transaction(&signer, tx).await?;
@@ -220,22 +216,18 @@ impl TxGenerator {
         for i in 0..count {
             // 生成随机密钥对
             let signer = Self::generate_keypair()?;
-            
+
             // 生成随机接收地址
             let to_signer = Self::generate_keypair()?;
             let to_address = to_signer.address();
-            
+
             // 随机金额（0.1 - 10 ETH）
             let value_eth = rand::thread_rng().gen_range(0.1..10.0);
-            
+
             // 创建交易
             let nonce = i as u64;
             let value = U256::from((value_eth * 1e18) as u64);
-            let tx = Self::create_transaction(
-                to_address,
-                value,
-                nonce,
-            );
+            let tx = Self::create_transaction(to_address, value, nonce);
 
             // 签名
             let raw_tx = Self::sign_transaction(&signer, tx).await?;
@@ -294,7 +286,9 @@ async fn main() -> Result<()> {
             rpc_url,
         } => {
             let generator = TxGenerator::new(rpc_url);
-            let tx_hash = generator.generate_and_send(&private_key, &to, value).await?;
+            let tx_hash = generator
+                .generate_and_send(&private_key, &to, value)
+                .await?;
             println!("✅ 交易哈希: {}", tx_hash);
         }
 

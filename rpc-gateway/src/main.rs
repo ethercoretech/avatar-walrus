@@ -7,7 +7,9 @@ use jsonrpsee::core::async_trait;
 use jsonrpsee::proc_macros::rpc;
 use jsonrpsee::server::{Server, ServerHandle};
 use serde::{Deserialize, Serialize};
-use tracing::{info, warn};
+use std::sync::Arc;
+use tokio::sync::OnceCell;
+use tracing::{info, warn, error};
 use tracing_subscriber::{fmt, EnvFilter};
 use sha2::{Digest, Sha256};
 use alloy_rlp::{RlpDecodable, Decodable};
@@ -81,6 +83,8 @@ pub trait WalrusRpcApi {
 pub struct WalrusRpcServer {
     walrus_client: CliClient,
     default_topic: String,
+    /// 使用 OnceCell 确保 topic 只注册一次
+    topic_registered: Arc<OnceCell<()>>,
 }
 
 impl WalrusRpcServer {
@@ -89,7 +93,41 @@ impl WalrusRpcServer {
         Self {
             walrus_client,
             default_topic,
+            topic_registered: Arc::new(OnceCell::new()),
         }
+    }
+
+    /// 确保 topic 已注册(只执行一次)
+    /// 
+    /// 使用 OnceCell 保证线程安全的单次初始化
+    /// 如果注册失败,会返回错误给调用方
+    async fn ensure_topic_registered(&self) -> Result<(), jsonrpsee::types::ErrorObjectOwned> {
+        self.topic_registered
+            .get_or_try_init(|| async {
+                info!("正在注册 topic: {}", self.default_topic);
+                match self.walrus_client.register(&self.default_topic).await {
+                    Ok(_) => {
+                        info!("✅ Topic '{}' 注册成功", self.default_topic);
+                        Ok(())
+                    }
+                    Err(e) => {
+                        // 检查是否是"已存在"的错误
+                        let err_msg = e.to_string();
+                        if err_msg.contains("already exists") || err_msg.contains("already registered") {
+                            info!("Topic '{}' 已存在,跳过注册", self.default_topic);
+                            // 对于"已存在"的情况,我们认为是成功的
+                            Ok(())
+                        } else {
+                            error!("注册 topic '{}' 失败: {}", self.default_topic, err_msg);
+                            Err(RpcError::WalrusWriteFailed.into_error_object(err_msg))
+                        }
+                    }
+                }
+            })
+            .await
+            .map_err(|e: jsonrpsee::types::ErrorObjectOwned| e)?;
+        
+        Ok(())
     }
 
     /// 将十六进制字符串转换为 Walrus 可以接受的格式
@@ -161,10 +199,8 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         let hex_data = hex::encode(tx_json.as_bytes());
         let hex_data = Self::ensure_hex_format(&hex_data);
 
-        // 确保 topic 存在
-        if let Err(e) = self.walrus_client.register(&self.default_topic).await {
-            warn!("注册 topic 失败 (可能已存在): {}", e);
-        }
+        // 确保 topic 已注册（只会执行一次）
+        self.ensure_topic_registered().await?;
 
         // 写入 Walrus
         self.walrus_client
@@ -190,10 +226,8 @@ impl WalrusRpcApiServer for WalrusRpcServer {
 
         let hex_data = Self::ensure_hex_format(&data);
 
-        // 确保 topic 存在
-        if let Err(e) = self.walrus_client.register(&self.default_topic).await {
-            warn!("注册 topic 失败 (可能已存在): {}", e);
-        }
+        // 确保 topic 已注册（只会执行一次）
+        self.ensure_topic_registered().await?;
 
         // 直接写入 Walrus
         self.walrus_client

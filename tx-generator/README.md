@@ -2,6 +2,11 @@
 
 一个以太坊交易生成工具，支持密钥生成、交易签名并发送到 RPC Gateway。
 
+```
+### 快速启动测试，构建1000笔交易，间隔0毫秒发送，并打印出TPS。
+cargo run --bin tx-generator -- batch-generate --count 1000 --interval-ms 0
+```
+
 ## 功能特性
 
 - 🔑 生成以太坊密钥对（私钥/公钥/地址）

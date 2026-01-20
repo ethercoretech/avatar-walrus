@@ -58,7 +58,7 @@ enum Command {
         rpc_url: String,
 
         /// 发送间隔（毫秒）
-        #[arg(long, default_value = "100")]
+        #[arg(long, default_value = "0")]
         interval_ms: u64,
     },
 }
@@ -213,6 +213,11 @@ impl TxGenerator {
     async fn batch_generate(&self, count: usize, interval_ms: u64) -> Result<()> {
         info!("🚀 开始批量生成 {} 笔测试交易", count);
 
+        // 记录开始时间
+        let start_time = std::time::Instant::now();
+        let mut success_count = 0;
+        let mut failure_count = 0;
+
         for i in 0..count {
             // 生成随机密钥对
             let signer = Self::generate_keypair()?;
@@ -235,6 +240,7 @@ impl TxGenerator {
             // 发送
             match self.send_transaction(&raw_tx).await {
                 Ok(tx_hash) => {
+                    success_count += 1;
                     info!(
                         "[{}/{}] ✅ 交易已发送: {} ({:.2} ETH)",
                         i + 1,
@@ -244,17 +250,35 @@ impl TxGenerator {
                     );
                 }
                 Err(e) => {
+                    failure_count += 1;
                     warn!("[{}/{}] ❌ 发送失败: {}", i + 1, count, e);
                 }
             }
 
             // 等待间隔
-            if i < count - 1 {
+            if interval_ms > 0 && i < count - 1 {
+                info!("休息 {} 豪秒", interval_ms);
                 tokio::time::sleep(tokio::time::Duration::from_millis(interval_ms)).await;
             }
         }
 
+        // 计算总耗时
+        let elapsed = start_time.elapsed();
+        let elapsed_secs = elapsed.as_secs_f64();
+        let tps = success_count as f64 / elapsed_secs;
+
         info!("🎉 批量生成完成！");
+        info!("📊 统计信息:");
+        info!("   总交易数: {}", count);
+        info!("   成功: {} 笔", success_count);
+        info!("   失败: {} 笔", failure_count);
+        info!("   总耗时: {:.2} 秒", elapsed_secs);
+        info!("   平均吞吐量: {:.2} TPS (交易/秒)", tps);
+        info!(
+            "   平均延迟: {:.2} ms/交易",
+            elapsed_secs * 1000.0 / count as f64
+        );
+
         Ok(())
     }
 }

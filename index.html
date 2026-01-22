@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EtherCoreTech Benchmark Performance</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .btn-run {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-run:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-run:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #da190b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.4);
+        }
+        
+        .status-panel {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .status-value {
+            color: #333;
+        }
+        
+        .status-running {
+            color: #2196F3;
+        }
+        
+        .status-completed {
+            color: #4CAF50;
+        }
+        
+        .status-error {
+            color: #f44336;
+        }
+        
+        .image-container {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .placeholder {
+            color: #999;
+            font-size: 18px;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(33, 150, 243, 0.3);
+            border-radius: 50%;
+            border-top-color: #2196F3;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .command-display {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+        
+        .command-label {
+            color: #888;
+            margin-bottom: 5px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EtherCoreTech Benchmark Performance</h1>
+        <p class="subtitle">Real-time performance testing and visualization demonstration platform</p>
+<!--         
+        <div class="command-display">
+            <div class="command-label">测试命令</div>
+            <div>{{ test_command }}</div>
+        </div>
+        
+        <div class="command-display">
+            <div class="command-label">可视化命令</div>
+            <div>{{ visualize_command }}</div>
+        </div>
+         -->
+        <div class="control-panel">
+            <button class="btn-run" id="runBtn" onclick="runBenchmark()">
+                ▶️ Start Benchmark
+            </button>
+            <button class="btn-reset" onclick="resetStatus()">
+                🔄 Reset Status
+            </button>
+        </div>
+        
+        <div class="status-panel">
+            <div class="status-item">
+                <span class="status-label">Status</span>
+                <span class="status-value" id="statusValue">Ready</span>    
+            </div>
+            <div class="status-item">
+                <span class="status-label">Running</span>
+                <span class="status-value" id="runningValue">No</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Completed</span>
+                <span class="status-value" id="completedValue">No</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Benchmark Status</span>
+                <span class="status-value" id="benchmarkStartedValue">Not Started</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Visualization Status</span>
+                <span class="status-value" id="visualizationStartedValue">Not Started</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Error</span>
+                <span class="status-value" id="errorValue">None</span>
+            </div>
+            <!-- <div class="status-item">
+                <span class="status-label">Image URL</span>
+                <span class="status-value" id="imageUrlValue">Not Generated</span>
+            </div> -->
+        </div>
+        
+        <div class="image-container" id="imageContainer">
+            <div class="placeholder">点击"运行基准测试"开始性能测试</div>
+        </div>
+    </div>
+    
+    <script>
+        let statusInterval = null;
+        
+        async function runBenchmark() {
+            try {
+                const response = await fetch('/api/run-benchmark', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    startStatusPolling();
+                } else {
+                    alert('启动失败: ' + data.detail);
+                }
+            } catch (error) {
+                alert('请求失败: ' + error.message);
+            }
+        }
+        
+        async function resetStatus() {
+            try {
+                const response = await fetch('/api/reset', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    stopStatusPolling();
+                    updateStatusDisplay({
+                        running: false,
+                        completed: false,
+                        error: null,
+                        image_url: null,
+                        benchmark_started: false,
+                        visualization_started: false
+                    });
+                } else {
+                    alert('重置失败: ' + data.detail);
+                }
+            } catch (error) {
+                alert('请求失败: ' + error.message);
+            }
+        }
+        
+        async function getStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                updateStatusDisplay(data);
+                
+                if (!data.running && !data.completed && !data.error) {
+                    stopStatusPolling();
+                }
+            } catch (error) {
+                console.error('获取状态失败:', error);
+            }
+        }
+        
+        function updateStatusDisplay(data) {
+            const runBtn = document.getElementById('runBtn');
+            
+            runBtn.disabled = data.running;
+            
+            const statusValue = document.getElementById('statusValue');
+            const runningValue = document.getElementById('runningValue');
+            const completedValue = document.getElementById('completedValue');
+            const benchmarkStartedValue = document.getElementById('benchmarkStartedValue');
+            const visualizationStartedValue = document.getElementById('visualizationStartedValue');
+            const errorValue = document.getElementById('errorValue');
+            const imageUrlValue = document.getElementById('imageUrlValue');
+            const imageContainer = document.getElementById('imageContainer');
+            
+            if (data.running) {
+                statusValue.innerHTML = '运行中 <span class="loading"></span>';
+                statusValue.className = 'status-value status-running';
+            } else if (data.completed) {
+                statusValue.textContent = '已完成';
+                statusValue.className = 'status-value status-completed';
+            } else if (data.error) {
+                statusValue.textContent = '错误';
+                statusValue.className = 'status-value status-error';
+            } else {
+                statusValue.textContent = '就绪';
+                statusValue.className = 'status-value';
+            }
+            
+            runningValue.textContent = data.running ? '是' : '否';
+            completedValue.textContent = data.completed ? '是' : '否';
+            benchmarkStartedValue.textContent = data.benchmark_started ? '已启动' : '未启动';
+            visualizationStartedValue.textContent = data.visualization_started ? '已启动' : '未启动';
+            errorValue.textContent = data.error || '无';
+            if (imageUrlValue) {
+                imageUrlValue.textContent = data.image_url || '未生成';
+            }
+            
+            if (data.image_url) {
+                const imgElement = imageContainer.querySelector('img');
+                if (imgElement) {
+                    imgElement.src = data.image_url;
+                } else {
+                    imageContainer.innerHTML = `<img src="${data.image_url}" alt="Throughput Monitor" />`;
+                }
+            } else if (data.running) {
+                if (data.benchmark_started && !data.visualization_started) {
+                    imageContainer.innerHTML = '<div class="placeholder">基准测试运行中，等待可视化启动...</div>';
+                } else if (data.visualization_started) {
+                    imageContainer.innerHTML = '<div class="placeholder">可视化运行中，等待数据生成...</div>';
+                } else {
+                    imageContainer.innerHTML = '<div class="placeholder">正在运行基准测试，请稍候...</div>';
+                }
+            } else if (data.error) {
+                imageContainer.innerHTML = `<div class="placeholder" style="color: #f44336;">测试失败: ${data.error}</div>`;
+            } else {
+                imageContainer.innerHTML = '<div class="placeholder">点击"运行基准测试"开始性能测试</div>';
+            }
+        }
+        
+        function startStatusPolling() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+            }
+            getStatus();
+            statusInterval = setInterval(getStatus, 2000);
+        }
+        
+        function stopStatusPolling() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+        }
+        
+        window.onload = function() {
+            getStatus();
+        };
+    </script>
+</body>
+</html>

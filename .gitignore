@@ -2,6 +2,7 @@ distributed-walrus/test_data_rollover/
 *.py
 !distributed-walrus/scripts/*.py
 !scripts/*.py
+!demo130.py
 .DS_Store
 /target
 /wal_files

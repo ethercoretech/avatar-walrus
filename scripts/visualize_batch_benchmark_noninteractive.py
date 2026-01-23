@@ -36,7 +36,6 @@ class BatchBenchmarkVisualizer:
     def __init__(self, csv_file, output_prefix='batch_benchmark'):
         self.csv_file = csv_file
         self.output_prefix = output_prefix
-        self.timestamp = None
         plt.style.use('seaborn-v0_8' if 'seaborn-v0_8' in plt.style.available else 'default')
     
     def load_csv_data(self):
@@ -54,8 +53,7 @@ class BatchBenchmarkVisualizer:
     
     def plot_throughput(self, df, output_file=None):
         if output_file is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = f"{self.output_prefix}throughput_{timestamp}.png"
+            output_file = f"{self.output_prefix}throughput.png"
         
         fig, axes = plt.subplots(2, 2, figsize=(16, 12))
         fig.suptitle('Batch Benchmark Throughput Analysis', fontsize=16, fontweight='bold')
@@ -107,8 +105,7 @@ class BatchBenchmarkVisualizer:
     
     def plot_cumulative(self, df, output_file=None):
         if output_file is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = f"{self.output_prefix}cumulative_{timestamp}.png"
+            output_file = f"{self.output_prefix}cumulative.png"
         
         fig, axes = plt.subplots(1, 3, figsize=(18, 6))
         fig.suptitle('Batch Benchmark Cumulative Statistics', fontsize=16, fontweight='bold')
@@ -141,8 +138,7 @@ class BatchBenchmarkVisualizer:
     
     def plot_statistics_summary(self, df, output_file=None):
         if output_file is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = f"{self.output_prefix}statistics_{timestamp}.png"
+            output_file = f"{self.output_prefix}statistics.png"
         
         fig, axes = plt.subplots(2, 2, figsize=(16, 12))
         fig.suptitle('Batch Benchmark Statistics Summary', fontsize=16, fontweight='bold')
@@ -196,12 +192,9 @@ class BatchBenchmarkVisualizer:
             return False, None
         
         try:
-            if self.timestamp is None:
-                self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            throughput_file = f"{self.output_prefix}throughput_{self.timestamp}.png"
-            cumulative_file = f"{self.output_prefix}cumulative_{self.timestamp}.png"
-            statistics_file = f"{self.output_prefix}statistics_{self.timestamp}.png"
+            throughput_file = f"{self.output_prefix}throughput.png"
+            cumulative_file = f"{self.output_prefix}cumulative.png"
+            statistics_file = f"{self.output_prefix}statistics.png"
             
             self.plot_throughput(df, throughput_file)
             self.plot_cumulative(df, cumulative_file)
@@ -222,11 +215,9 @@ class BatchBenchmarkVisualizer:
         print(f"\nGenerating single-shot plots from {self.csv_file}...")
         
         try:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            
-            throughput_file = f"{self.output_prefix}throughput_{timestamp}.png"
-            cumulative_file = f"{self.output_prefix}cumulative_{timestamp}.png"
-            statistics_file = f"{self.output_prefix}statistics_{timestamp}.png"
+            throughput_file = f"{self.output_prefix}throughput.png"
+            cumulative_file = f"{self.output_prefix}cumulative.png"
+            statistics_file = f"{self.output_prefix}statistics.png"
             
             self.plot_throughput(df, throughput_file)
             print(f"Saved throughput chart to: {throughput_file}")

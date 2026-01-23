@@ -28,10 +28,14 @@ logger.info(f"Templates directory: {TEMPLATES_DIR}")
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
-TEST_COMMAND = "WALRUS_FSYNC=no-fsync WALRUS_DURATION=2m WALRUS_BATCH_SIZE=1000 WALRUS_BACKEND=fd cargo test --release --test multithreaded_benchmark_writes"
-VISUALIZE_COMMAND = "python scripts/visualize_throughput_non_interactive.py --file benchmark_throughput.csv"
-OUTPUT_IMAGE = "throughput_monitor.png"
-CSV_FILE = "benchmark_throughput.csv"
+# -TEST_COMMAND = "WALRUS_FSYNC=no-fsync WALRUS_DURATION=2m WALRUS_BATCH_SIZE=1000 WALRUS_BACKEND=fd cargo test --release --test multithreaded_benchmark_writes"
+# -VISUALIZE_COMMAND = "python scripts/visualize_throughput_non_interactive.py --file benchmark_throughput.csv"
+# -OUTPUT_IMAGE = "throughput_monitor.png"
+# -CSV_FILE = "benchmark_throughput.csv"
+TEST_COMMAND = "WALRUS_FSYNC=no-fsync WALRUS_DURATION=2m WALRUS_BATCH_SIZE=1000 WALRUS_BACKEND=fd cargo test --release --test multithreaded_benchmark_batch"
+VISUALIZE_COMMAND = "python scripts/visualize_batch_benchmark_noninteractive.py --file batch_benchmark_throughput.csv"
+OUTPUT_IMAGE = "batch_benchmark_throughput.png"
+CSV_FILE = "batch_benchmark_throughput.csv"
 
 test_status = {
     "running": False, 

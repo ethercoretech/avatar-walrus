@@ -1,6 +1,7 @@
-//! Walrus 状态数据库实现
+//! 键值状态数据库实现
 //! 
-//! 将 Walrus 的 append-only WAL 适配为键值存储
+//! 使用 Walrus 作为交易排序器，提供按序写入和读取能力
+//! Walrus 本身不作为持久化存储，而是用于确保状态变更的顺序性
 
 use alloy_primitives::{Address, U256, B256, Bytes};
 use parking_lot::RwLock;
@@ -10,9 +11,9 @@ use crate::db::{StateDatabase, DbError, TransactionBuffer};
 use crate::db::cache::{StateCache, CacheKey, CacheValue};
 use crate::schema::{Account, StorageSlot};
 
-/// Walrus 状态数据库
+/// 键值状态数据库
 /// 
-/// 使用 Walrus 作为底层存储，配合缓存和事务支持
+/// 使用 Walrus 作为交易排序器，配合缓存和事务支持实现状态管理
 pub struct WalrusStateDB {
     /// Walrus 实例
     wal: Arc<Walrus>,

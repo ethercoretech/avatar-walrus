@@ -88,7 +88,7 @@ impl WalrusStateDB {
         // 批量读取该 topic 的所有条目（简化实现）
         // 生产环境应该维护索引避免全表扫描
         let max_bytes = 1024 * 1024 * 10; // 10MB
-        let entries = self.wal.batch_read_for_topic(topic, max_bytes, false)
+        let entries = self.wal.batch_read_for_topic(topic, max_bytes, false, None)
             .map_err(|e| DbError::Walrus(e.to_string()))?;
         
         // 返回最后一条

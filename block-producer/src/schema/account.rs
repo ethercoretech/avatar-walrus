@@ -2,7 +2,7 @@
 //! 
 //! 定义以太坊账户的核心字段
 
-use alloy_primitives::{Address, U256, B256};
+use alloy_primitives::{U256, B256};
 use serde::{Deserialize, Serialize};
 
 /// 以太坊账户

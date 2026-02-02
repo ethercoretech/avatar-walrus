@@ -202,10 +202,10 @@ async fn submit_to_execution_layer(&self, block: &Block) -> Result<()> {
 
 ### 添加状态持久化
 
-可以将区块存储到数据库或 Walrus：
+可以将区块存储到Redb数据库：
 
 ```rust
-// 写入到 Walrus
+// 写入到 Redb数据库
 let block_json = serde_json::to_string(&block)?;
 let block_hex = format!("0x{}", hex::encode(block_json.as_bytes()));
 self.walrus_client.put("blocks", &block_hex).await?;
@@ -267,22 +267,3 @@ cargo run -- --block-interval 10
 # 更大的区块
 cargo run -- --max-txs-per-block 500
 ```
-
----
-
-## 路线图
-
-- [ ] 实现 EVM 执行引擎
-- [ ] 状态管理（账户、余额、nonce）
-- [ ] 交易收据和事件日志
-- [ ] 区块存储到 Walrus
-- [ ] 多节点共识
-- [ ] Gas 计算和限制
-- [ ] 交易池优化
-- [ ] MEV 保护
-
----
-
-## 许可证
-
-同 Walrus 主项目

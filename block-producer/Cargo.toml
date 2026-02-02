@@ -3,6 +3,15 @@ name = "block-producer"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "block_producer"
+path = "src/lib.rs"
+
+# 暂时禁用 main.rs，第一阶段只实现数据库层
+# [[bin]]
+# name = "block-producer"
+# path = "src/main.rs"
+
 [dependencies]
 # === Walrus 客户端 ===
 distributed-walrus = { path = "../distributed-walrus" }
@@ -38,7 +47,7 @@ sha2 = "0.10"
 
 # === EVM & 以太坊类型 ===
 revm = { version = "12", features = ["std", "serde"] }
-alloy-primitives = "0.8"
+alloy-primitives = { version = "0.8", features = ["serde"] }
 alloy-trie = "0.6"
 alloy-rlp = "0.3"
 alloy-consensus = "0.6"
@@ -50,3 +59,7 @@ lru = "0.12"             # LRU 缓存
 
 # === 其他工具 ===
 bytes = "1.5"
+redb = "3.1.0"
+
+[dev-dependencies]
+tempfile = "3.14"

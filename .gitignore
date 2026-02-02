@@ -27,3 +27,7 @@ tx-generator/keys/
 .walrus_pids/
 .walrus_logs/
 prompt_assistance.md
+reth
+revm
+redb
+lighthouse

@@ -1,6 +1,6 @@
 //! 交易收据构建器
 
-use alloy_primitives::{Address, B256, Bytes};
+use alloy_primitives::{B256, Bytes};
 use crate::schema::{TransactionReceipt, Log, Block, Transaction};
 use crate::executor::ExecutionResult;
 

@@ -2,9 +2,9 @@
 //! 
 //! 执行单笔交易并返回结果
 
-use alloy_primitives::{Address, U256, B256, Bytes};
-use revm::{EVM, primitives::{TxEnv, BlockEnv, ExecutionResult as RevmExecutionResult, Output}};
-use crate::db::WalrusStateDB;
+use alloy_primitives::{U256, Address, Bytes};
+use revm::primitives::{BlockEnv, TxEnv, TransactTo};
+use crate::db::RedbStateDB;
 use crate::executor::{ExecutorError, RevmAdapter};
 use crate::schema::Transaction;
 use serde::{Deserialize, Serialize};
@@ -38,7 +38,7 @@ pub struct TransactionExecutor {
 
 impl TransactionExecutor {
     /// 创建交易执行器
-    pub fn new(db: WalrusStateDB) -> Self {
+    pub fn new(db: RedbStateDB) -> Self {
         Self {
             adapter: RevmAdapter::new(db),
         }
@@ -60,19 +60,8 @@ impl TransactionExecutor {
         // 1. 构建交易环境
         let tx_env = self.build_tx_env(tx)?;
         
-        // 2. 创建 EVM 实例
-        let mut evm = EVM::builder()
-            .with_db(&mut self.adapter)
-            .with_block_env(block_env)
-            .with_tx_env(tx_env)
-            .build();
-        
-        // 3. 执行交易
-        let result = evm.transact()
-            .map_err(|e| ExecutorError::Evm(format!("{:?}", e)))?;
-        
-        // 4. 处理执行结果
-        self.process_result(result, tx)
+        // 2. 委托给 RevmAdapter 执行
+        self.adapter.execute(tx_env, block_env)
     }
     
     /// 构建交易环境
@@ -84,8 +73,8 @@ impl TransactionExecutor {
             .map_err(|e| ExecutorError::Transaction(e))?;
         
         tx_env.transact_to = match tx.to_address()? {
-            Some(addr) => revm::primitives::TransactTo::Call(addr),
-            None => revm::primitives::TransactTo::Create,
+            Some(addr) => TransactTo::Call(addr),
+            None => TransactTo::Create,
         };
         
         tx_env.value = tx.value_wei()
@@ -115,51 +104,9 @@ impl TransactionExecutor {
         Ok(tx_env)
     }
     
-    /// 处理执行结果
-    fn process_result(
-        &self,
-        result: RevmExecutionResult,
-        tx: &Transaction,
-    ) -> Result<ExecutionResult, ExecutorError> {
-        let success = result.is_success();
-        let gas_used = result.gas_used();
-        
-        let (output, contract_address) = match result {
-            RevmExecutionResult::Success { output, gas_refunded, logs, .. } => {
-                let (out, contract_addr) = match output {
-                    Output::Call(data) => (Some(data), None),
-                    Output::Create(data, addr) => (Some(data), addr),
-                };
-                
-                return Ok(ExecutionResult {
-                    gas_used,
-                    success: true,
-                    output: out,
-                    contract_address: contract_addr,
-                    gas_refund: gas_refunded,
-                    logs,
-                });
-            }
-            RevmExecutionResult::Revert { output, gas_used } => {
-                (Some(output), None)
-            }
-            RevmExecutionResult::Halt { reason, gas_used } => {
-                return Err(ExecutorError::Evm(format!("Halted: {:?}", reason)));
-            }
-        };
-        
-        Ok(ExecutionResult {
-            gas_used,
-            success,
-            output,
-            contract_address,
-            gas_refund: 0,
-            logs: Vec::new(),
-        })
-    }
     
     /// 获取数据库的可变引用
-    pub fn db_mut(&mut self) -> &mut WalrusStateDB {
+    pub fn db_mut(&mut self) -> &mut RedbStateDB {
         self.adapter.db_mut()
     }
 }
@@ -168,23 +115,32 @@ impl TransactionExecutor {
 mod tests {
     use super::*;
     use crate::schema::Account;
+    use crate::db::StateDatabase;
     use alloy_primitives::address;
+    use tempfile::TempDir;
+    
+    fn create_test_db() -> (RedbStateDB, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+        (db, temp_dir)
+    }
     
     #[test]
     fn test_simple_transfer() {
-        let mut db = WalrusStateDB::new().unwrap();
+        let (mut db, _temp_dir) = create_test_db();
         
         // 设置发送方账户
-        let from = address!("742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
-        let to = address!("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let _to = address!("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
         
-        let mut from_account = Account::with_balance(U256::from(1_000_000_000_000_000_000u64));
+        let mut from_account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
         from_account.nonce = 0;
         db.set_account(&from, from_account).unwrap();
         
         // 构建交易
         let tx = Transaction {
-            from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
             to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
             value: "0xde0b6b3a7640000".to_string(), // 1 ETH
             data: "0x".to_string(),
@@ -207,5 +163,6 @@ mod tests {
         
         println!("Execution result: {:?}", result);
         assert!(result.gas_used > 0);
+        assert!(result.success);
     }
 }

@@ -47,10 +47,9 @@ sha2 = "0.10"
 
 # === EVM & 以太坊类型 ===
 revm = { version = "12", features = ["std", "serde"] }
-alloy-primitives = { version = "0.8", features = ["serde"] }
-alloy-trie = "0.6"
+alloy-primitives = { version = "0.7", features = ["serde"] }
+alloy-trie = "0.5"
 alloy-rlp = "0.3"
-alloy-consensus = "0.6"
 
 # === 并发与缓存 ===
 rayon = "1.10"           # 并行计算状态根

@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_transaction_parsing() {
         let tx = Transaction {
-            from: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
             to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
             value: "0xde0b6b3a7640000".to_string(), // 1 ETH
             data: "0x".to_string(),

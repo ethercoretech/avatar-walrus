@@ -41,41 +41,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
-name = "alloy-consensus"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae09ffd7c29062431dd86061deefe4e3c6f07fa0d674930095f8dcedb0baf02c"
-dependencies = [
- "alloy-eips 0.6.4",
- "alloy-primitives 0.8.26",
- "alloy-rlp",
- "auto_impl",
- "c-kzg",
- "derive_more 1.0.0",
-]
-
-[[package]]
-name = "alloy-eip2930"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0069cf0642457f87a01a014f6dc29d5d893cd4fd8fddf0c3cdfad1bb3ebafc41"
-dependencies = [
- "alloy-primitives 0.8.26",
- "alloy-rlp",
-]
-
-[[package]]
-name = "alloy-eip7702"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c986539255fb839d1533c128e190e557e52ff652c9ef62939e233a81dd93f7e"
-dependencies = [
- "alloy-primitives 0.8.26",
- "alloy-rlp",
- "derive_more 1.0.0",
-]
-
-[[package]]
 name = "alloy-eips"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -88,23 +53,6 @@ dependencies = [
  "k256",
  "once_cell",
  "serde",
-]
-
-[[package]]
-name = "alloy-eips"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b6aa3961694b30ba53d41006131a2fca3bdab22e4c344e46db2c639e7c2dfdd"
-dependencies = [
- "alloy-eip2930",
- "alloy-eip7702",
- "alloy-primitives 0.8.26",
- "alloy-rlp",
- "c-kzg",
- "derive_more 1.0.0",
- "once_cell",
- "serde",
- "sha2",
 ]
 
 [[package]]
@@ -141,7 +89,6 @@ dependencies = [
  "const-hex",
  "derive_more 2.1.1",
  "foldhash",
- "hashbrown 0.15.5",
  "indexmap",
  "itoa",
  "k256",
@@ -191,13 +138,14 @@ dependencies = [
 
 [[package]]
 name = "alloy-trie"
-version = "0.6.0"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9703ce68b97f8faae6f7739d1e003fc97621b856953cbcdbb2b515743f23288"
+checksum = "0a46c9c4fdccda7982e7928904bd85fe235a0404ee3d7e197fff13d61eac8b4f"
 dependencies = [
  "alloy-primitives 0.8.26",
  "alloy-rlp",
  "derive_more 1.0.0",
+ "hashbrown 0.14.5",
  "nybbles",
  "serde",
  "smallvec",
@@ -605,8 +553,7 @@ dependencies = [
 name = "block-producer"
 version = "0.1.0"
 dependencies = [
- "alloy-consensus",
- "alloy-primitives 0.8.26",
+ "alloy-primitives 0.7.7",
  "alloy-rlp",
  "alloy-trie",
  "anyhow",
@@ -1575,7 +1522,6 @@ dependencies = [
  "allocator-api2",
  "equivalent",
  "foldhash",
- "serde",
 ]
 
 [[package]]
@@ -1672,8 +1618,6 @@ checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
 dependencies = [
  "equivalent",
  "hashbrown 0.16.1",
- "serde",
- "serde_core",
 ]
 
 [[package]]
@@ -1793,9 +1737,9 @@ dependencies = [
 
 [[package]]
 name = "keccak-asm"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "505d1856a39b200489082f90d897c3f07c455563880bc5952e38eabf731c83b6"
+checksum = "b646a74e746cd25045aa0fd42f4f7f78aa6d119380182c7e63a5593c4ab8df6f"
 dependencies = [
  "digest 0.10.7",
  "sha3-asm",
@@ -2460,7 +2404,6 @@ dependencies = [
  "libc",
  "rand_chacha 0.3.1",
  "rand_core 0.6.4",
- "serde",
 ]
 
 [[package]]
@@ -2678,7 +2621,7 @@ version = "7.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2fc4311037ee093ec50ec734e1424fcb3e12d535c6cef683b75d1c064639630c"
 dependencies = [
- "alloy-eips 0.2.1",
+ "alloy-eips",
  "alloy-primitives 0.7.7",
  "auto_impl",
  "bitflags 2.10.0",
@@ -3199,9 +3142,9 @@ dependencies = [
 
 [[package]]
 name = "sha3-asm"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c28efc5e327c837aa837c59eae585fc250715ef939ac32881bcc11677cd02d46"
+checksum = "b31139435f327c93c6038ed350ae4588e2c70a13d50599509fee6349967ba35a"
 dependencies = [
  "cc",
  "cfg-if",

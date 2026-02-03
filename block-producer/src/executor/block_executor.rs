@@ -2,13 +2,12 @@
 //! 
 //! 批量执行区块中的所有交易
 
-use alloy_primitives::{B256, Address};
+use alloy_primitives::B256;
 use revm::primitives::BlockEnv;
 use std::collections::HashMap;
-use crate::db::WalrusStateDB;
+use crate::db::{RedbStateDB, StateDatabase};
 use crate::executor::{ExecutorError, TransactionExecutor, ExecutionResult};
 use crate::schema::{Block, TransactionReceipt};
-use crate::trie::StateRootCalculator;
 use serde::{Deserialize, Serialize};
 
 /// 区块执行结果
@@ -37,7 +36,7 @@ pub struct BlockExecutor {
 
 impl BlockExecutor {
     /// 创建区块执行器
-    pub fn new(db: WalrusStateDB) -> Self {
+    pub fn new(db: RedbStateDB) -> Self {
         Self {
             tx_executor: TransactionExecutor::new(db),
         }
@@ -51,7 +50,7 @@ impl BlockExecutor {
         block: &Block,
     ) -> Result<BlockExecutionResult, ExecutorError> {
         let mut execution_results = HashMap::new();
-        let mut receipts = HashMap::new();
+        let receipts = HashMap::new();
         let mut total_gas_used = 0u64;
         let mut successful_txs = 0;
         let mut failed_txs = 0;
@@ -116,10 +115,12 @@ impl BlockExecutor {
     /// 计算状态根
     /// 
     /// 在区块执行完成后计算状态根
+    /// 
+    /// TODO: Stage 4 - 实现完整的状态根计算（需要 Trie 模块）
     pub fn calculate_state_root(&self) -> Result<B256, ExecutorError> {
-        let calculator = StateRootCalculator::new(self.tx_executor.adapter.db());
-        calculator.calculate_incremental()
-            .map_err(|e| ExecutorError::Other(format!("State root calculation failed: {}", e)))
+        Err(ExecutorError::Other(
+            "State root calculation not implemented yet (Stage 4)".to_string()
+        ))
     }
     
     /// 构建区块环境
@@ -138,7 +139,7 @@ impl BlockExecutor {
     }
     
     /// 获取数据库的可变引用
-    pub fn db_mut(&mut self) -> &mut WalrusStateDB {
+    pub fn db_mut(&mut self) -> &mut RedbStateDB {
         self.tx_executor.db_mut()
     }
 }
@@ -146,12 +147,20 @@ impl BlockExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::{BlockHeader, Transaction};
+    use crate::schema::BlockHeader;
     use chrono::Utc;
+    use tempfile::TempDir;
+    
+    fn create_test_db() -> (RedbStateDB, TempDir) {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+        (db, temp_dir)
+    }
     
     #[tokio::test]
     async fn test_block_execution() {
-        let db = WalrusStateDB::new().unwrap();
+        let (db, _temp_dir) = create_test_db();
         let mut executor = BlockExecutor::new(db);
         
         // 构建测试区块

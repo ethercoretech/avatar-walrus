@@ -38,3 +38,10 @@ pub enum ExecutorError {
     #[error("Other error: {0}")]
     Other(String),
 }
+
+// 为 ExecutorError 实现 From<String>，支持 ? 操作符
+impl From<String> for ExecutorError {
+    fn from(s: String) -> Self {
+        ExecutorError::Other(s)
+    }
+}

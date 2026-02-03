@@ -182,6 +182,16 @@ impl RevmAdapter {
                 db.set_account(address, acc)
                     .map_err(|e| ExecutorError::Database(e.to_string()))?;
                 
+                // 存储合约字节码（REVM 12 关键逻辑）
+                // 当 account.info.code 有值且 code_hash 有效时，需要持久化字节码
+                if let Some(ref code) = info.code {
+                    // 避免存储空代码或空哈希
+                    if info.code_hash != EMPTY_CODE_HASH && !code.is_empty() {
+                        db.set_code(info.code_hash, code.bytes().clone())
+                            .map_err(|e| ExecutorError::Database(e.to_string()))?;
+                    }
+                }
+                
                 // 存储槽变更
                 for (slot, value) in &account.storage {
                     if value.is_changed() {

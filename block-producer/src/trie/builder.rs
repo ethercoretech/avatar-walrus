@@ -28,13 +28,13 @@ impl TrieBuilder {
     /// - `key`: 键（通常是地址或存储槽的哈希）
     /// - `value`: RLP 编码后的值
     pub fn add_leaf(&mut self, key: B256, value: &[u8]) {
-        let nibbles = Nibbles::from_bytes_unchecked(key.as_slice());
+        let nibbles = Nibbles::from_nibbles_unchecked(key.as_slice());
         self.builder.add_leaf(nibbles, value);
     }
     
     /// 添加分支节点（用于增量更新）
     pub fn add_branch(&mut self, key: B256, value: B256, children_are_in_trie: bool) {
-        let nibbles = Nibbles::from_bytes_unchecked(key.as_slice());
+        let nibbles = Nibbles::from_nibbles_unchecked(key.as_slice());
         self.builder.add_branch(nibbles, value, children_are_in_trie);
     }
     

@@ -1,6 +1,6 @@
 use block_producer::db::{RedbStateDB, StateDatabase};
 use block_producer::schema::Account;
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{Address, U256, address};
 use tempfile::TempDir;
 
 fn create_test_db() -> (RedbStateDB, TempDir) {
@@ -14,7 +14,7 @@ fn create_test_db() -> (RedbStateDB, TempDir) {
 fn test_redb_account_crud() {
     let (mut db, _temp_dir) = create_test_db();
     
-    let addr = Address::random();
+    let addr = address!("1234567890123456789012345678901234567890");
     let account = Account::with_balance(U256::from(1000));
     
     // 测试写入
@@ -36,7 +36,7 @@ fn test_redb_account_crud() {
 fn test_redb_storage_crud() {
     let (mut db, _temp_dir) = create_test_db();
     
-    let addr = Address::random();
+    let addr = address!("2234567890123456789012345678901234567890");
     let key = U256::from(42);
     let value = U256::from(12345);
     
@@ -58,7 +58,7 @@ fn test_redb_storage_crud() {
 fn test_redb_transaction() {
     let (mut db, _temp_dir) = create_test_db();
     
-    let addr = Address::random();
+    let addr = address!("3234567890123456789012345678901234567890");
     let account = Account::with_balance(U256::from(1000));
     
     // 开始事务
@@ -85,7 +85,7 @@ fn test_redb_transaction() {
 fn test_redb_transaction_rollback() {
     let (mut db, _temp_dir) = create_test_db();
     
-    let addr = Address::random();
+    let addr = address!("4234567890123456789012345678901234567890");
     let account = Account::with_balance(U256::from(1000));
     
     // 开始事务
@@ -108,8 +108,8 @@ fn test_redb_transaction_rollback() {
 fn test_redb_changed_accounts_tracking() {
     let (mut db, _temp_dir) = create_test_db();
     
-    let addr1 = Address::random();
-    let addr2 = Address::random();
+    let addr1 = address!("5234567890123456789012345678901234567890");
+    let addr2 = address!("6234567890123456789012345678901234567890");
     
     db.begin_transaction().unwrap();
     

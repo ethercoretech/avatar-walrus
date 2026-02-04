@@ -186,7 +186,6 @@ impl TransactionExecutor {
         Ok(tx_env)
     }
     
-    
     /// 获取数据库的可变引用
     pub fn db_mut(&mut self) -> &mut RedbStateDB {
         self.adapter.db_mut()

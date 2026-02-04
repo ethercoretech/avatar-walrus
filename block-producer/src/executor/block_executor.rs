@@ -66,17 +66,25 @@ impl BlockExecutor {
         for (index, tx) in block.transactions.iter().enumerate() {
             let tx_hash = tx.hash.clone()
                 .unwrap_or_else(|| format!("tx_{}", index));
-            
+                    
+            // 预验证交易
+            if let Err(e) = self.tx_executor.validate_transaction(tx) {
+                failed_txs += 1;
+                tracing::warn!("交易验证失败 [{}]: {}", tx_hash, e);
+                continue; // 跳过该交易,不影响其他交易
+            }
+                    
+            // 执行交易
             match self.tx_executor.execute(tx, block_env.clone()) {
                 Ok(result) => {
                     total_gas_used += result.gas_used;
-                    
+                            
                     if result.success {
                         successful_txs += 1;
                     } else {
                         failed_txs += 1;
                     }
-                    
+                            
                     // TODO: 构建交易收据
                     // let receipt = self.build_receipt(
                     //     &tx_hash,
@@ -86,15 +94,22 @@ impl BlockExecutor {
                     //     total_gas_used,
                     // );
                     // receipts.insert(tx_hash.clone(), receipt);
-                    
+                            
                     execution_results.insert(tx_hash, result);
                 }
                 Err(e) => {
-                    // 交易执行失败，回滚事务
-                    self.tx_executor.db_mut().rollback_transaction()
-                        .map_err(|e| ExecutorError::Database(e.to_string()))?;
-                    
-                    return Err(e);
+                    // 执行失败,根据错误类型处理
+                    if e.is_fatal() {
+                        // 严重错误,回滚整个区块事务
+                        self.tx_executor.db_mut().rollback_transaction()
+                            .map_err(|e| ExecutorError::Database(e.to_string()))?;
+                                
+                        return Err(e);
+                    } else {
+                        // 非严重错误,跳过该交易
+                        failed_txs += 1;
+                        tracing::warn!("交易执行失败 [{}]: {}", tx_hash, e);
+                    }
                 }
             }
         }
@@ -183,5 +198,161 @@ mod tests {
         
         assert_eq!(result.total_gas_used, 0);
         assert_eq!(result.successful_txs, 0);
+    }
+    
+    #[tokio::test]
+    async fn test_block_execution_with_invalid_tx() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        // 设置账户余额
+        use alloy_primitives::{address, U256};
+        use crate::schema::{Account, Transaction};
+        
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let mut account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account.nonce = 0;
+        db.set_account(&from, account).unwrap();
+        
+        let mut executor = BlockExecutor::new(db);
+        
+        // 构建区块,包含一笔有效交易和一笔无效交易
+        let valid_tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: Some("0xvalid".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let invalid_tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x0".to_string(), // Gas 为 0，无效
+            nonce: "0x1".to_string(),
+            hash: Some("0xinvalid".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let block = Block {
+            header: BlockHeader {
+                number: 1,
+                parent_hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                timestamp: Utc::now(),
+                tx_count: 2,
+                transactions_root: "0x".to_string(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(30_000_000),
+                receipts_root: None,
+            },
+            transactions: vec![valid_tx, invalid_tx],
+        };
+        
+        let result = executor.execute_block(&block).await.unwrap();
+        
+        // 有效交易应该执行成功,无效交易应该被跳过
+        assert_eq!(result.successful_txs, 1);
+        assert_eq!(result.failed_txs, 1);
+        assert!(result.total_gas_used > 0);
+    }
+    
+    #[tokio::test]
+    async fn test_block_execution_partial_failure() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        use alloy_primitives::{address, U256};
+        use crate::schema::{Account, Transaction};
+        
+        // 设置两个账户
+        let from1 = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let from2 = address!("5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed");
+        
+        let mut account1 = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account1.nonce = 0;
+        db.set_account(&from1, account1).unwrap();
+        
+        let mut account2 = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account2.nonce = 0;
+        db.set_account(&from2, account2).unwrap();
+        
+        let mut executor = BlockExecutor::new(db);
+        
+        // 构建区块:
+        // - 第1笔: from1的有效交易
+        // - 第2笔: from2的无效交易 (Gas为0,应被跳过)
+        // - 第3笔: from2的有效交易
+        let tx1 = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: Some("0xtx1".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let tx2 = Transaction {
+            from: "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string(),
+            to: Some("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x0".to_string(), // Gas为0,在验证阶段被拒绝
+            nonce: "0x0".to_string(),
+            hash: Some("0xtx2".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let tx3 = Transaction {
+            from: "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string(),
+            to: Some("0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb0".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(), // 使用 from2 的第一笔交易
+            hash: Some("0xtx3".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let block = Block {
+            header: BlockHeader {
+                number: 1,
+                parent_hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                timestamp: Utc::now(),
+                tx_count: 3,
+                transactions_root: "0x".to_string(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(30_000_000),
+                receipts_root: None,
+            },
+            transactions: vec![tx1, tx2, tx3],
+        };
+        
+        let result = executor.execute_block(&block).await.unwrap();
+        
+        // 第1和第3笔应该成功,第2笔应该失败
+        assert_eq!(result.successful_txs, 2);
+        assert_eq!(result.failed_txs, 1);
     }
 }

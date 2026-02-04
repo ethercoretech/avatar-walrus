@@ -4,7 +4,7 @@
 
 use alloy_primitives::{U256, Address, Bytes};
 use revm::primitives::{BlockEnv, TxEnv, TransactTo};
-use crate::db::RedbStateDB;
+use crate::db::{RedbStateDB, StateDatabase};
 use crate::executor::{ExecutorError, RevmAdapter};
 use crate::schema::Transaction;
 use serde::{Deserialize, Serialize};
@@ -42,6 +42,88 @@ impl TransactionExecutor {
         Self {
             adapter: RevmAdapter::new(db),
         }
+    }
+    
+    /// 验证交易
+    /// 
+    /// 在执行前进行预验证,确保交易有效
+    /// 
+    /// # 验证项
+    /// - Gas limit 非零
+    /// - Nonce 有效性
+    /// - 账户余额充足
+    pub fn validate_transaction(&mut self, tx: &Transaction) -> Result<(), ExecutorError> {
+        // 1. Gas limit 非零检查
+        let gas_limit = tx.gas_limit()
+            .map_err(|e| ExecutorError::Transaction(e))?;
+        
+        if gas_limit == 0 {
+            return Err(ExecutorError::InvalidGas);
+        }
+        
+        // 2. 获取账户信息
+        let from_addr = tx.from_address()
+            .map_err(|e| ExecutorError::Transaction(e))?;
+        
+        let account = self.adapter.db_mut()
+            .get_account(&from_addr)
+            .map_err(|e| ExecutorError::Database(e.to_string()))?;
+        
+        // 3. Nonce 检查
+        let tx_nonce = tx.nonce_value()
+            .map_err(|e| ExecutorError::Transaction(e))?;
+        
+        if let Some(ref acc) = account {
+            if tx_nonce < acc.nonce {
+                return Err(ExecutorError::NonceTooLow {
+                    expected: acc.nonce,
+                    got: tx_nonce,
+                });
+            }
+        }
+        
+        // 4. 余额检查
+        let required = Self::calculate_required_balance(tx)?;
+        let available = account.map_or(U256::ZERO, |a| a.balance);
+        
+        if available < required {
+            return Err(ExecutorError::InsufficientFunds {
+                required: format!("{}", required),
+                available: format!("{}", available),
+            });
+        }
+        
+        Ok(())
+    }
+    
+    /// 计算交易所需的余额
+    /// 
+    /// 计算公式: gas_limit * gas_price + value
+    fn calculate_required_balance(tx: &Transaction) -> Result<U256, ExecutorError> {
+        let gas_limit = tx.gas_limit()
+            .map_err(|e| ExecutorError::Transaction(e))?;
+        
+        // 解析 gas_price (如果没有提供,默认为 1 Gwei)
+        let gas_price = if let Some(ref gp) = tx.gas_price {
+            let hex = gp.trim_start_matches("0x");
+            U256::from_str_radix(hex, 16)
+                .map_err(|e| ExecutorError::Transaction(format!("Invalid gas_price: {}", e)))?
+        } else {
+            U256::from(1_000_000_000u64) // 1 Gwei
+        };
+        
+        let value = tx.value_wei()
+            .map_err(|e| ExecutorError::Transaction(e))?;
+        
+        // 计算总所需余额
+        let gas_cost = U256::from(gas_limit)
+            .checked_mul(gas_price)
+            .ok_or_else(|| ExecutorError::Transaction("Gas cost overflow".to_string()))?;
+        
+        let total = gas_cost.checked_add(value)
+            .ok_or_else(|| ExecutorError::Transaction("Total cost overflow".to_string()))?;
+        
+        Ok(total)
     }
     
     /// 执行交易
@@ -164,5 +246,131 @@ mod tests {
         println!("Execution result: {:?}", result);
         assert!(result.gas_used > 0);
         assert!(result.success);
+    }
+    
+    #[test]
+    fn test_validate_transaction_zero_gas() {
+        let (db, _temp_dir) = create_test_db();
+        let mut executor = TransactionExecutor::new(db);
+        
+        let tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x0".to_string(), // Gas 为 0
+            nonce: "0x0".to_string(),
+            hash: None,
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let result = executor.validate_transaction(&tx);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), ExecutorError::InvalidGas));
+    }
+    
+    #[test]
+    fn test_validate_transaction_nonce_too_low() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        // 设置账户 nonce 为 5
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let mut account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64));
+        account.nonce = 5;
+        db.set_account(&from, account).unwrap();
+        
+        let mut executor = TransactionExecutor::new(db);
+        
+        // 交易 nonce 为 3，低于账户 nonce
+        let tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0x0".to_string(),
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x3".to_string(), // nonce = 3
+            hash: None,
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let result = executor.validate_transaction(&tx);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            ExecutorError::NonceTooLow { expected, got } => {
+                assert_eq!(expected, 5);
+                assert_eq!(got, 3);
+            }
+            _ => panic!("Expected NonceTooLow error"),
+        }
+    }
+    
+    #[test]
+    fn test_validate_transaction_insufficient_balance() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        // 设置账户余额为 0.1 ETH
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let account = Account::with_balance(U256::from(100_000_000_000_000_000u64)); // 0.1 ETH
+        db.set_account(&from, account).unwrap();
+        
+        let mut executor = TransactionExecutor::new(db);
+        
+        // 尝试转账 1 ETH
+        let tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: None,
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let result = executor.validate_transaction(&tx);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            ExecutorError::InsufficientFunds { .. }
+        ));
+    }
+    
+    #[test]
+    fn test_validate_transaction_success() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        // 设置账户余额充足
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let mut account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account.nonce = 0;
+        db.set_account(&from, account).unwrap();
+        
+        let mut executor = TransactionExecutor::new(db);
+        
+        let tx = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: None,
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let result = executor.validate_transaction(&tx);
+        assert!(result.is_ok());
     }
 }

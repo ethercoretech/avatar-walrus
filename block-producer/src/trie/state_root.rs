@@ -4,7 +4,7 @@
 
 use alloy_primitives::{Address, B256};
 use rayon::prelude::*;
-use crate::db::{StateDatabase, DbError};
+use crate::db::StateDatabase;
 use crate::trie::{TrieBuilder, TrieError, StorageRootCalculator};
 use crate::trie::builder::{hash_key, rlp_encode_account};
 
@@ -124,11 +124,14 @@ pub const EMPTY_STATE_ROOT: B256 = B256::new([
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::WalrusStateDB;
+    use crate::db::RedbStateDB;
+    use tempfile::TempDir;
     
     #[test]
     fn test_empty_state_root() {
-        let db = WalrusStateDB::new().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
         let calculator = StateRootCalculator::new(&db);
         
         let root = calculator.calculate_incremental().unwrap();

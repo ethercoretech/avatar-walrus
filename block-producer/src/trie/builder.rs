@@ -5,7 +5,6 @@
 use alloy_primitives::{B256, keccak256};
 use alloy_trie::{HashBuilder, Nibbles};
 use alloy_rlp::Encodable;
-use super::TrieError;
 
 /// Trie 构建器包装
 /// 
@@ -28,13 +27,13 @@ impl TrieBuilder {
     /// - `key`: 键（通常是地址或存储槽的哈希）
     /// - `value`: RLP 编码后的值
     pub fn add_leaf(&mut self, key: B256, value: &[u8]) {
-        let nibbles = Nibbles::from_nibbles_unchecked(key.as_slice());
+        let nibbles = Nibbles::unpack(key);
         self.builder.add_leaf(nibbles, value);
     }
     
     /// 添加分支节点（用于增量更新）
     pub fn add_branch(&mut self, key: B256, value: B256, children_are_in_trie: bool) {
-        let nibbles = Nibbles::from_nibbles_unchecked(key.as_slice());
+        let nibbles = Nibbles::unpack(key);
         self.builder.add_branch(nibbles, value, children_are_in_trie);
     }
     
@@ -72,7 +71,15 @@ pub fn rlp_encode_account(
     code_hash: B256,
 ) -> Vec<u8> {
     let mut buf = Vec::new();
-    (nonce, balance, storage_root, code_hash).encode(&mut buf);
+    // 手动编码列表
+    alloy_rlp::Header {
+        list: true,
+        payload_length: nonce.length() + balance.length() + storage_root.length() + code_hash.length(),
+    }.encode(&mut buf);
+    nonce.encode(&mut buf);
+    balance.encode(&mut buf);
+    storage_root.encode(&mut buf);
+    code_hash.encode(&mut buf);
     buf
 }
 
@@ -86,7 +93,7 @@ pub fn rlp_encode_storage_value(value: alloy_primitives::U256) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::{Address, U256, address};
+    use alloy_primitives::{U256, address};
     
     #[test]
     fn test_trie_builder_empty() {

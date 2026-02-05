@@ -7,11 +7,10 @@
 //! 4. 区块批量执行
 
 use block_producer::db::{RedbStateDB, StateDatabase};
-use block_producer::executor::{TransactionExecutor, BlockExecutor, ExecutionResult};
-use block_producer::schema::{Account, Transaction, Block, BlockHeader};
+use block_producer::executor::TransactionExecutor;
+use block_producer::schema::{Account, Transaction};
 use alloy_primitives::{address, U256};
 use revm::primitives::BlockEnv;
-use chrono::Utc;
 
 fn main() {
     println!("🧪 开始测试 REVM 适配器（第二阶段）\n");

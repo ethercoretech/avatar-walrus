@@ -9,8 +9,6 @@ pub mod receipts;
 
 pub use revm_adapter::RevmAdapter;
 pub use transaction::{TransactionExecutor, ExecutionResult};
-pub use block_executor::{BlockExecutor, BlockExecutionResult};
-pub use receipts::ReceiptBuilder;
 
 use thiserror::Error;
 

@@ -3,6 +3,7 @@
 //! 扩展原有的 Block 和 Transaction，添加 EVM 执行需要的字段
 
 use alloy_primitives::{Address, U256, B256, Bytes};
+use alloy_rlp::{Encodable, BufMut};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -17,20 +18,19 @@ pub struct Transaction {
     pub gas: String,
     pub nonce: String,
     
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 交易哈希（可选）
     pub hash: Option<String>,
     
-    // === 扩展字段（用于 EVM 执行） ===
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Gas 价格（可选，用于 EVM 执行）
     pub gas_price: Option<String>,
     
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 链 ID（可选）
     pub chain_id: Option<u64>,
     
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// EIP-1559: 最大 gas 费用（可选）
     pub max_fee_per_gas: Option<String>,
     
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// EIP-1559: 最大优先费用（可选）
     pub max_priority_fee_per_gas: Option<String>,
 }
 
@@ -86,6 +86,42 @@ impl Transaction {
     }
 }
 
+// 为 Transaction 实现 RLP 编码
+impl Encodable for Transaction {
+    fn encode(&self, out: &mut dyn BufMut) {
+        // 简化实现：将交易作为列表编码
+        alloy_rlp::Header {
+            list: true,
+            payload_length: self.length() - 1,
+        }
+        .encode(out);
+        
+        self.from.encode(out);
+        // 处理 Option<String> 类型
+        match &self.to {
+            Some(to) => to.encode(out),
+            None => (&[] as &[u8]).encode(out), // 空字节数组表示 None
+        }
+        self.value.encode(out);
+        self.data.encode(out);
+        self.gas.encode(out);
+        self.nonce.encode(out);
+    }
+    
+    fn length(&self) -> usize {
+        let payload_length = self.from.length()
+            + match &self.to {
+                Some(to) => to.length(),
+                None => (&[] as &[u8]).length(),
+            }
+            + self.value.length()
+            + self.data.length()
+            + self.gas.length()
+            + self.nonce.length();
+        payload_length + alloy_rlp::length_of_length(payload_length)
+    }
+}
+
 /// 区块头（扩展版）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockHeader {
@@ -95,7 +131,8 @@ pub struct BlockHeader {
     /// 父区块哈希
     pub parent_hash: String,
     
-    /// 时间戳
+    /// 时间戳（使用 Unix 时间戳存储，兼容 bincode）
+    #[serde(with = "chrono::serde::ts_seconds")]
     pub timestamp: DateTime<Utc>,
     
     /// 交易数量
@@ -107,16 +144,13 @@ pub struct BlockHeader {
     /// 状态根哈希（执行后更新）
     pub state_root: Option<String>,
     
-    /// Gas 使用量
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Gas 使用量（执行后填充）
     pub gas_used: Option<u64>,
     
     /// Gas 限制
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_limit: Option<u64>,
     
-    /// 收据根哈希
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// 收据根哈希（执行后填充）
     pub receipts_root: Option<String>,
 }
 
@@ -211,6 +245,53 @@ pub struct Log {
     
     /// 日志索引
     pub log_index: u64,
+}
+
+// 为 TransactionReceipt 实现 RLP 编码
+impl Encodable for TransactionReceipt {
+    fn encode(&self, out: &mut dyn BufMut) {
+        // 简化实现：将收据作为列表编码
+        alloy_rlp::Header {
+            list: true,
+            payload_length: self.length() - 1,
+        }
+        .encode(out);
+        
+        self.status.encode(out);
+        self.cumulative_gas_used.encode(out);
+        self.logs_bloom.encode(out);
+        self.logs.encode(out);
+    }
+    
+    fn length(&self) -> usize {
+        let payload_length = self.status.length()
+            + self.cumulative_gas_used.length()
+            + self.logs_bloom.length()
+            + self.logs.length();
+        payload_length + alloy_rlp::length_of_length(payload_length)
+    }
+}
+
+// 为 Log 实现 RLP 编码
+impl Encodable for Log {
+    fn encode(&self, out: &mut dyn BufMut) {
+        alloy_rlp::Header {
+            list: true,
+            payload_length: self.length() - 1,
+        }
+        .encode(out);
+        
+        self.address.encode(out);
+        self.topics.encode(out);
+        self.data.encode(out);
+    }
+    
+    fn length(&self) -> usize {
+        let payload_length = self.address.length()
+            + self.topics.length()
+            + self.data.length();
+        payload_length + alloy_rlp::length_of_length(payload_length)
+    }
 }
 
 #[cfg(test)]

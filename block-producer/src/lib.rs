@@ -5,5 +5,5 @@
 pub mod db;
 pub mod schema;
 pub mod executor;
-// pub mod trie;
-// pub mod utils;     
+pub mod trie;
+pub mod utils;     

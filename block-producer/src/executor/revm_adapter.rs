@@ -152,6 +152,9 @@ impl RevmAdapter {
         // 应用状态变更到数据库
         self.apply_state_changes(&result_and_state)?;
         
+        // 清除缓存，确保下次交易读取到最新状态（特别是 nonce）
+        self.evm.context.evm.db.clear_cache();
+        
         // 转换执行结果
         self.convert_result(result_and_state.result)
     }
@@ -249,6 +252,15 @@ impl RevmAdapter {
         unsafe {
             let ptr = self.db.as_ref() as *const RwLock<RedbStateDB> as *mut RwLock<RedbStateDB>;
             &mut *(*ptr).get_mut()
+        }
+    }
+    
+    /// 获取内部数据库的不可变引用
+    pub fn db(&self) -> &RedbStateDB {
+        // 使用 unsafe 以绕过 RwLock
+        unsafe {
+            let ptr = self.db.as_ref() as *const RwLock<RedbStateDB>;
+            &*(*ptr).data_ptr()
         }
     }
     

@@ -3,7 +3,7 @@
 //! 测试交易验证功能的完整流程
 
 use block_producer::db::{RedbStateDB, StateDatabase};
-use block_producer::executor::{BlockExecutor, TransactionExecutor, ExecutorError};
+use block_producer::executor::{block_executor::BlockExecutor, TransactionExecutor, ExecutorError};
 use block_producer::schema::{Account, Transaction, Block, BlockHeader};
 use alloy_primitives::{address, U256};
 use chrono::Utc;

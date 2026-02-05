@@ -2,8 +2,8 @@
 //! 
 //! 为单个合约账户计算存储树的根哈希
 
-use alloy_primitives::{Address, U256, B256, keccak256};
-use crate::db::{StateDatabase, DbError};
+use alloy_primitives::{Address, U256, B256};
+use crate::db::StateDatabase;
 use crate::trie::{TrieBuilder, TrieError};
 use crate::trie::builder::{hash_key, rlp_encode_storage_value};
 
@@ -86,12 +86,15 @@ pub const EMPTY_STORAGE_ROOT: B256 = B256::new([
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::WalrusStateDB;
+    use crate::db::RedbStateDB;
     use alloy_primitives::address;
+    use tempfile::TempDir;
     
     #[test]
     fn test_empty_storage_root() {
-        let db = WalrusStateDB::new().unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
         let calculator = StorageRootCalculator::new(&db);
         
         let addr = address!("0000000000000000000000000000000000000001");

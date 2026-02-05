@@ -16,7 +16,6 @@ mod executor;
 mod utils;
 
 // 重新导出类型（为了与现有代码兼容）
-use schema::{Block as SchemaBlock, BlockHeader as SchemaBlockHeader, Transaction as SchemaTransaction};
 
 /// 区块生产者（Block Producer）
 /// 
@@ -250,62 +249,94 @@ impl BlockProducer {
     async fn submit_to_execution_layer(&self, block: &mut Block) -> Result<()> {
         info!("📦 提交区块 #{} 到执行层...", block.header.number);
         
-        // TODO: 实现真实的 EVM 执行
-        // 当前使用占位符实现
-        // 
-        // 取消注释以下代码以启用真实 EVM 执行：
-        // 
-        // use crate::db::WalrusStateDB;
-        // use crate::executor::BlockExecutor;
-        // 
-        // // 1. 初始化状态数据库
-        // let state_db = WalrusStateDB::new()?;
-        // 
-        // // 2. 创建区块执行器
-        // let mut executor = BlockExecutor::new(state_db);
-        // 
-        // // 3. 转换区块格式（从旧格式到新格式）
-        // let schema_block = self.convert_to_schema_block(block);
-        // 
-        // // 4. 执行区块
-        // let execution_result = executor.execute_block(&schema_block).await
-        //     .map_err(|e| anyhow::anyhow!("Block execution failed: {}", e))?;
-        // 
-        // // 5. 计算状态根
-        // let state_root = executor.calculate_state_root()
-        //     .map_err(|e| anyhow::anyhow!("State root calculation failed: {}", e))?;
-        // 
-        // // 6. 更新区块头
-        // block.header.state_root = Some(format!("{:?}", state_root));
-        // block.header.gas_used = Some(execution_result.total_gas_used);
-        // 
-        // info!("   ✓ 执行完成: {} 成功, {} 失败",
-        //       execution_result.successful_txs,
-        //       execution_result.failed_txs);
-        // info!("   ✓ 状态根: {}", state_root);
+        use block_producer::db::RedbStateDB;
+        use block_producer::executor::block_executor::BlockExecutor;
+        use block_producer::utils::calculate_merkle_root;
         
-        self.execute_block_placeholder(block).await?;
+        // 1. 初始化状态数据库
+        let db_path = format!("./data/block_producer_state_{}.redb", self.topic);
+        let state_db = RedbStateDB::new(&db_path)
+            .map_err(|e| anyhow::anyhow!("Failed to create state DB: {}", e))?;
+        
+        // 2. 创建区块执行器
+        let mut executor = BlockExecutor::new(state_db);
+        
+        // 3. 转换区块格式（从旧格式到新格式）
+        let schema_block = self.convert_to_schema_block(block)?;
+        
+        // 4. 执行区块
+        let execution_result = executor.execute_block(&schema_block).await
+            .map_err(|e| anyhow::anyhow!("Block execution failed: {}", e))?;
+        
+        // 5. 计算状态根
+        let state_root = executor.calculate_state_root()
+            .map_err(|e| anyhow::anyhow!("State root calculation failed: {}", e))?;
+        
+        // 6. 计算交易根
+        let transactions_root = calculate_merkle_root(&schema_block.transactions);
+        
+        // 7. 计算收据根
+        let receipts: Vec<_> = execution_result.receipts.values().cloned().collect();
+        let receipts_root = if !receipts.is_empty() {
+            calculate_merkle_root(&receipts)
+        } else {
+            block_producer::utils::EMPTY_ROOT_HASH
+        };
+        
+        // 8. 更新区块头
+        block.header.state_root = Some(format!("0x{}", hex::encode(state_root.as_slice())));
+        block.header.gas_used = Some(execution_result.total_gas_used);
+        block.header.transactions_root = format!("0x{}", hex::encode(transactions_root.as_slice()));
+        block.header.receipts_root = Some(format!("0x{}", hex::encode(receipts_root.as_slice())));
+        
+        // 9. 持久化区块到数据库
+        executor.db_mut().save_block(&schema_block)
+            .map_err(|e| anyhow::anyhow!("Failed to save block: {}", e))?;
+        
+        info!("   ✓ 执行完成: {} 成功, {} 失败",
+              execution_result.successful_txs,
+              execution_result.failed_txs);
+        info!("   ✓ 状态根: 0x{}", hex::encode(state_root.as_slice()));
+        info!("   ✓ Gas 使用: {}", execution_result.total_gas_used);
         
         Ok(())
     }
-
-    /// 执行层占位符实现
-    async fn execute_block_placeholder(&self, block: &Block) -> Result<()> {
-        info!("   [执行层占位符]");
-        info!("   - 区块号: {}", block.header.number);
-        info!("   - 交易数: {}", block.transactions.len());
+    
+    /// 转换区块格式
+    fn convert_to_schema_block(&self, block: &Block) -> Result<block_producer::schema::Block> {
+        use block_producer::schema::{Block as SchemaBlock, BlockHeader as SchemaHeader, Transaction as SchemaTx};
         
-        // 模拟执行延迟
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        // 转换交易列表
+        let transactions: Vec<SchemaTx> = block.transactions.iter().map(|tx| {
+            SchemaTx {
+                from: tx.from.clone(),
+                to: tx.to.clone(),
+                value: tx.value.clone(),
+                data: tx.data.clone(),
+                gas: tx.gas.clone(),
+                nonce: tx.nonce.clone(),
+                hash: tx.hash.clone(),
+                gas_price: None,
+                chain_id: None,
+                max_fee_per_gas: None,
+                max_priority_fee_per_gas: None,
+            }
+        }).collect();
         
-        // 未来在这里实现：
-        // for tx in &block.transactions {
-        //     execution_engine.execute(tx)?;
-        // }
-        
-        info!("   ✓ 执行完成（模拟）");
-        
-        Ok(())
+        Ok(SchemaBlock {
+            header: SchemaHeader {
+                number: block.header.number,
+                parent_hash: block.header.parent_hash.clone(),
+                timestamp: block.header.timestamp,
+                tx_count: block.transactions.len(),
+                transactions_root: block.header.transactions_root.clone(),
+                state_root: block.header.state_root.clone(),
+                gas_used: block.header.gas_used,
+                gas_limit: block.header.gas_limit,
+                receipts_root: block.header.receipts_root.clone(),
+            },
+            transactions,
+        })
     }
 }
 

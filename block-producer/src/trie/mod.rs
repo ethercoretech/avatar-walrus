@@ -10,7 +10,6 @@ pub mod proof;
 pub use builder::TrieBuilder;
 pub use state_root::StateRootCalculator;
 pub use storage_root::StorageRootCalculator;
-pub use proof::{MerkleProof, ProofVerifier};
 
 use thiserror::Error;
 

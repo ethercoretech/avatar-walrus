@@ -130,12 +130,12 @@ impl BlockExecutor {
     /// 计算状态根
     /// 
     /// 在区块执行完成后计算状态根
-    /// 
-    /// TODO: Stage 4 - 实现完整的状态根计算（需要 Trie 模块）
     pub fn calculate_state_root(&self) -> Result<B256, ExecutorError> {
-        Err(ExecutorError::Other(
-            "State root calculation not implemented yet (Stage 4)".to_string()
-        ))
+        use crate::trie::StateRootCalculator;
+        
+        let calculator = StateRootCalculator::new(self.tx_executor.db());
+        calculator.calculate_incremental()
+            .map_err(|e| ExecutorError::Other(format!("State root calculation failed: {}", e)))
     }
     
     /// 构建区块环境

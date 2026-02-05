@@ -8,6 +8,4 @@ pub mod cache;
 pub mod redb_db;
 
 pub use traits::{StateDatabase, DbError, TransactionBuffer};
-pub use kvdb::WalrusStateDB;
-pub use cache::StateCache;
 pub use redb_db::RedbStateDB;

@@ -190,6 +190,11 @@ impl TransactionExecutor {
     pub fn db_mut(&mut self) -> &mut RedbStateDB {
         self.adapter.db_mut()
     }
+    
+    /// 获取数据库的不可变引用
+    pub fn db(&self) -> &RedbStateDB {
+        self.adapter.db()
+    }
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use block_producer::db::{RedbStateDB, StateDatabase};
 use block_producer::schema::Account;
-use alloy_primitives::{Address, U256, address};
+use alloy_primitives::{U256, address};
 use tempfile::TempDir;
 
 fn create_test_db() -> (RedbStateDB, TempDir) {

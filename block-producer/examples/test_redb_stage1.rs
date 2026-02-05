@@ -4,7 +4,7 @@
 
 use block_producer::db::{RedbStateDB, StateDatabase};
 use block_producer::schema::Account;
-use alloy_primitives::{Address, U256, address};
+use alloy_primitives::{U256, address};
 
 fn main() {
     println!("🧪 开始测试 RedbStateDB（第一阶段）\n");

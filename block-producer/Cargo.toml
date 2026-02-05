@@ -7,10 +7,9 @@ edition = "2021"
 name = "block_producer"
 path = "src/lib.rs"
 
-# 暂时禁用 main.rs，第一阶段只实现数据库层
-# [[bin]]
-# name = "block-producer"
-# path = "src/main.rs"
+[[bin]]
+name = "block-producer"
+path = "src/main.rs"
 
 [dependencies]
 # === Walrus 客户端 ===
@@ -48,7 +47,7 @@ sha2 = "0.10"
 # === EVM & 以太坊类型 ===
 revm = { version = "12", features = ["std", "serde"] }
 alloy-primitives = { version = "0.7", features = ["serde"] }
-alloy-trie = "0.5"
+alloy-trie = "0.4"
 alloy-rlp = "0.3"
 
 # === 并发与缓存 ===

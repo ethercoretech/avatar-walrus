@@ -9,5 +9,4 @@ pub mod block;
 
 pub use account::Account;
 pub use storage::StorageSlot;
-pub use code::CodeEntry;
 pub use block::{Block, BlockHeader, Transaction, TransactionReceipt, Log};

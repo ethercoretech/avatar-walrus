@@ -50,7 +50,7 @@ impl BlockExecutor {
         block: &Block,
     ) -> Result<BlockExecutionResult, ExecutorError> {
         let mut execution_results = HashMap::new();
-        let receipts = HashMap::new();
+        let mut receipts = HashMap::new();
         let mut total_gas_used = 0u64;
         let mut successful_txs = 0;
         let mut failed_txs = 0;
@@ -85,15 +85,45 @@ impl BlockExecutor {
                         failed_txs += 1;
                     }
                             
-                    // TODO: 构建交易收据
-                    // let receipt = self.build_receipt(
-                    //     &tx_hash,
-                    //     index as u64,
-                    //     block,
-                    //     &result,
-                    //     total_gas_used,
-                    // );
-                    // receipts.insert(tx_hash.clone(), receipt);
+                    // 构建交易收据
+                    use crate::executor::receipts::ReceiptBuilder;
+                    
+                    // 将 tx_hash 字符串转换为 B256
+                    let tx_hash_b256 = if tx_hash.starts_with("0x") && tx_hash.len() == 66 {
+                        // 有效的十六进制哈希
+                        hex::decode(tx_hash.trim_start_matches("0x"))
+                            .ok()
+                            .and_then(|bytes| {
+                                if bytes.len() == 32 {
+                                    Some(B256::from_slice(&bytes))
+                                } else {
+                                    None
+                                }
+                            })
+                            .unwrap_or_else(|| {
+                                // 解码失败，使用确定性哈希
+                                use sha2::{Digest, Sha256};
+                                let mut hasher = Sha256::new();
+                                hasher.update(tx_hash.as_bytes());
+                                B256::from_slice(&hasher.finalize())
+                            })
+                    } else {
+                        // 不是有效哈希（如 "tx_0"），使用确定性哈希
+                        use sha2::{Digest, Sha256};
+                        let mut hasher = Sha256::new();
+                        hasher.update(tx_hash.as_bytes());
+                        B256::from_slice(&hasher.finalize())
+                    };
+                    
+                    let receipt = ReceiptBuilder::build(
+                        tx_hash_b256,
+                        index as u64,
+                        block,
+                        tx,
+                        &result,
+                        total_gas_used,
+                    );
+                    receipts.insert(tx_hash.clone(), receipt);
                             
                     execution_results.insert(tx_hash, result);
                 }

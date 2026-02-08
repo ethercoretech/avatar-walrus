@@ -28,6 +28,9 @@ pub enum ExecutorError {
     #[error("Invalid gas limit: must be greater than zero")]
     InvalidGas,
     
+    #[error("Block gas limit exceeded: used {used}, limit {limit}")]
+    BlockGasLimitExceeded { used: u64, limit: u64 },
+    
     #[error("Nonce too low: expected {expected}, got {got}")]
     NonceTooLow { expected: u64, got: u64 },
     
@@ -69,6 +72,7 @@ impl ExecutorError {
         matches!(
             self,
             ExecutorError::InvalidGas
+                | ExecutorError::BlockGasLimitExceeded { .. }
                 | ExecutorError::NonceTooLow { .. }
                 | ExecutorError::InsufficientFunds { .. }
         )

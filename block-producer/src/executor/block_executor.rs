@@ -55,6 +55,9 @@ impl BlockExecutor {
         let mut successful_txs = 0;
         let mut failed_txs = 0;
         
+        // 获取区块 gas 限制（默认 30M）
+        let block_gas_limit = block.header.gas_limit.unwrap_or(30_000_000);
+        
         // 开始事务
         self.tx_executor.db_mut().begin_transaction()
             .map_err(|e| ExecutorError::Database(e.to_string()))?;
@@ -77,7 +80,23 @@ impl BlockExecutor {
             // 执行交易
             match self.tx_executor.execute(tx, block_env.clone()) {
                 Ok(result) => {
-                    total_gas_used += result.gas_used;
+                    // 检查区块 gas 限制（在累计前检查）
+                    let new_total_gas = total_gas_used.saturating_add(result.gas_used);
+                    if new_total_gas > block_gas_limit {
+                        tracing::warn!(
+                            "区块 gas 超限，跳过交易 [{}]: 当前累计 {} + 本次 {} = {} > 限制 {}",
+                            tx_hash,
+                            total_gas_used,
+                            result.gas_used,
+                            new_total_gas,
+                            block_gas_limit
+                        );
+                        failed_txs += 1;
+                        continue; // 跳过该交易，不影响后续交易
+                    }
+                    
+                    // gas 未超限，累计使用量
+                    total_gas_used = new_total_gas;
                             
                     if result.success {
                         successful_txs += 1;
@@ -384,5 +403,94 @@ mod tests {
         // 第1和第3笔应该成功,第2笔应该失败
         assert_eq!(result.successful_txs, 2);
         assert_eq!(result.failed_txs, 1);
+    }
+    
+    #[tokio::test]
+    async fn test_block_gas_limit_exceeded() {
+        let (mut db, _temp_dir) = create_test_db();
+        
+        use alloy_primitives::{address, U256};
+        use crate::schema::{Account, Transaction};
+        
+        // 设置测试账户
+        let from = address!("0742d35Cc6634C0532925a3b844Bc9e7595f0bEb");
+        let mut account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account.nonce = 0;
+        db.set_account(&from, account).unwrap();
+        
+        let mut executor = BlockExecutor::new(db);
+        
+        // 构建3笔交易，每笔消耗 21000 gas
+        // 设置区块 gas 限制为 50000，只能容纳前2笔
+        let tx1 = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(), // 21000
+            nonce: "0x0".to_string(),
+            hash: Some("0xtx1".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let tx2 = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(), // 21000
+            nonce: "0x1".to_string(),
+            hash: Some("0xtx2".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let tx3 = Transaction {
+            from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
+            to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
+            value: "0xde0b6b3a7640000".to_string(), // 1 ETH
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(), // 21000 (这笔会超限)
+            nonce: "0x2".to_string(),
+            hash: Some("0xtx3".to_string()),
+            gas_price: Some("0x3b9aca00".to_string()),
+            chain_id: Some(1),
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        
+        let block = Block {
+            header: BlockHeader {
+                number: 1,
+                parent_hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+                timestamp: Utc::now(),
+                tx_count: 3,
+                transactions_root: "0x".to_string(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(50_000), // 设置较低的 gas 限制
+                receipts_root: None,
+            },
+            transactions: vec![tx1, tx2, tx3],
+        };
+        
+        let result = executor.execute_block(&block).await.unwrap();
+        
+        // 验证结果：前2笔成功(21000 + 21000 = 42000)，第3笔因超限被跳过(42000 + 21000 = 63000 > 50000)
+        assert_eq!(result.successful_txs, 2, "应该有2笔成功交易");
+        assert_eq!(result.failed_txs, 1, "应该有1笔失败交易（gas超限）");
+        assert_eq!(result.total_gas_used, 42000, "总 gas 应该是 42000");
+        assert!(result.total_gas_used <= 50_000, "总 gas 不应超过限制");
+        
+        println!("\n   ✓ 区块 gas 限制测试通过!");
+        println!("   - 成功交易: {}", result.successful_txs);
+        println!("   - 失败交易: {}", result.failed_txs);
+        println!("   - 总 Gas 使用: {}", result.total_gas_used);
+        println!("   - Gas 限制: 50000");
     }
 }

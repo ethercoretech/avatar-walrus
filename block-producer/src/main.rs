@@ -4,8 +4,9 @@ use clap::Parser;
 use distributed_walrus::cli_client::CliClient;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::VecDeque;
 use std::time::Duration;
-use tracing::{info, warn, error};
+use tracing::{info, warn, error, debug};
 use tracing_subscriber::{fmt, EnvFilter};
 
 // === 新增模块 ===
@@ -15,7 +16,9 @@ mod trie;
 mod executor;
 mod utils;
 
-// 重新导出类型（为了与现有代码兼容）
+// === 区块链常量配置 ===
+// 使用 lib.rs 中定义的常量，保持单一来源
+use block_producer::DEFAULT_BLOCK_GAS_LIMIT;
 
 /// 区块生产者（Block Producer）
 /// 
@@ -36,7 +39,7 @@ struct Args {
     block_interval: u64,
 
     /// 每个区块最大交易数
-    #[arg(long, default_value = "100")]
+    #[arg(long, default_value = "10000")]
     max_txs_per_block: usize,
 }
 
@@ -104,6 +107,13 @@ pub struct BlockProducer {
     max_txs_per_block: usize,
     current_block_number: u64,
     last_block_hash: String,
+    
+    // ===== 交易池 (类似 Reth 设计) =====
+    /// 待处理交易池：存储从 Walrus 读取但尚未打包的交易
+    pending_pool: VecDeque<Transaction>,
+    
+    /// 交易池最大容量（避免无限增长）
+    pool_max_size: usize,
 }
 
 impl BlockProducer {
@@ -114,6 +124,8 @@ impl BlockProducer {
         max_txs_per_block: usize,
     ) -> Self {
         let walrus_client = CliClient::new(walrus_addr);
+        let pool_max_size = max_txs_per_block * 10; // 交易池容量为单区块的10倍
+        
         Self {
             walrus_client,
             topic,
@@ -121,6 +133,10 @@ impl BlockProducer {
             max_txs_per_block,
             current_block_number: 0,
             last_block_hash: "0x0000000000000000000000000000000000000000000000000000000000000000".to_string(),
+            
+            // 初始化交易池
+            pending_pool: VecDeque::new(),
+            pool_max_size,
         }
     }
 
@@ -130,6 +146,7 @@ impl BlockProducer {
         info!("   Walrus topic: {}", self.topic);
         info!("   出块间隔: {}s", self.block_interval.as_secs());
         info!("   每块最大交易数: {}", self.max_txs_per_block);
+        info!("   交易池容量: {} 笔", self.pool_max_size);
         info!("");
 
         let mut interval = tokio::time::interval(self.block_interval);
@@ -154,17 +171,17 @@ impl BlockProducer {
 
     /// 生成一个区块
     async fn produce_block(&mut self) -> Result<Block> {
-        // 1. 从 Walrus 读取交易
-        let transactions = self.fetch_transactions().await?;
-        
+        // 1. 从交易池选择交易（而不是直接从 Walrus 读取）
+        let transactions = self.select_transactions_for_block().await?;
+            
         if transactions.is_empty() {
-            info!("⏭️  没有待处理的交易，跳过本轮出块");
-            return Err(anyhow::anyhow!("No transactions"));
+            info!("⭭️  交易池为空，跳过本轮出块");
+            return Err(anyhow::anyhow!("No transactions in pool"));
         }
-
+    
         // 2. 计算交易根哈希
         let transactions_root = self.calculate_transactions_root(&transactions);
-
+    
         // 3. 构建区块头
         let header = BlockHeader {
             number: self.current_block_number,
@@ -174,24 +191,161 @@ impl BlockProducer {
             transactions_root,
             state_root: None, // 执行后填充
             gas_used: None,
-            gas_limit: Some(30_000_000), // 默认 gas 限制
+            gas_limit: Some(DEFAULT_BLOCK_GAS_LIMIT), // 默认 gas 限制
             receipts_root: None,
         };
-
+    
         // 4. 构建区块
         let mut block = Block {
             header,
             transactions,
         };
-
+    
         // 5. 提交给执行层（会更新 state_root 和 gas_used）
         self.submit_to_execution_layer(&mut block).await?;
-
+    
         // 6. 更新状态
         self.last_block_hash = block.hash();
         self.current_block_number += 1;
-
+    
         Ok(block)
+    }
+    
+    /// 从 Walrus 补充交易池
+    async fn refill_pool(&mut self) -> Result<()> {
+        let initial_size = self.pending_pool.len();
+        let mut fetched = 0;
+        
+        while self.pending_pool.len() < self.pool_max_size {
+            match self.walrus_client.get(&self.topic).await? {
+                Some(hex_data) => {
+                    match self.parse_transaction(&hex_data) {
+                        Ok(tx) => {
+                            self.pending_pool.push_back(tx);
+                            fetched += 1;
+                        }
+                        Err(e) => {
+                            warn!("解析交易失败: {}, 数据: {}", e, hex_data);
+                            continue;
+                        }
+                    }
+                }
+                None => break,
+            }
+        }
+        
+        if fetched > 0 {
+            debug!("交易池补充: {} -> {} (新增 {})", 
+                   initial_size, self.pending_pool.len(), fetched);
+        }
+        
+        Ok(())
+    }
+    
+    /// 从交易池选择交易打包
+    async fn select_transactions_for_block(&mut self) -> Result<Vec<Transaction>> {
+        self.refill_pool().await?;
+        
+        if self.pending_pool.is_empty() {
+            return Ok(Vec::new());
+        }
+        
+        let mut candidates: Vec<Transaction> = self.pending_pool.drain(..).collect();
+        
+        info!("📋 开始交易选择: 候选交易 {} 笔", candidates.len());
+        
+        // 按 gas price 降序排序（优先打包高价交易）
+        candidates.sort_by(|a, b| {
+            let a_price = Self::parse_gas_price(&a.gas).unwrap_or(0);
+            let b_price = Self::parse_gas_price(&b.gas).unwrap_or(0);
+            b_price.cmp(&a_price)
+        });
+        
+        let mut selected = Vec::new();
+        let mut estimated_gas = 0u64;
+        // 统一使用常量作为 gas limit 来源
+        let block_gas_limit = DEFAULT_BLOCK_GAS_LIMIT;
+        let mut skipped_by_gas = 0;
+        
+        debug!("⛽ 区块 gas 限制: {}", block_gas_limit);
+        
+        for (idx, tx) in candidates.into_iter().enumerate() {
+            let tx_gas = Self::parse_gas_limit(&tx.gas).unwrap_or(21000);
+            let tx_hash_display = tx.hash.as_deref().unwrap_or("unknown");
+            
+            // 移除 max_txs_per_block 的硬性限制，只检查 gas
+            if estimated_gas + tx_gas <= block_gas_limit {
+                estimated_gas += tx_gas;
+                
+                debug!(
+                    "  ✓ 选择交易 #{}: hash={}, gas={}, 累计={}/{} ({:.1}%)",
+                    idx + 1,
+                    tx_hash_display,
+                    tx_gas,
+                    estimated_gas,
+                    block_gas_limit,
+                    (estimated_gas as f64 / block_gas_limit as f64) * 100.0
+                );
+                
+                selected.push(tx);
+            } else {
+                // Gas 不足，无法容纳此交易
+                skipped_by_gas += 1;
+                debug!(
+                    "  ✗ 跳过交易 #{}: hash={}, gas={} (剩余空间不足: {}/{})",
+                    idx + 1,
+                    tx_hash_display,
+                    tx_gas,
+                    block_gas_limit - estimated_gas,
+                    block_gas_limit
+                );
+                
+                // 放回队列，供下次打包
+                self.pending_pool.push_front(tx);
+            }
+        }
+        
+        // 输出详细的选择统计
+        info!(
+            "✅ 交易选择完成: 已选 {} 笔, 预估 gas {}/{} ({:.1}%), 跳过 {} 笔 (gas不足)",
+            selected.len(),
+            estimated_gas,
+            block_gas_limit,
+            (estimated_gas as f64 / block_gas_limit as f64) * 100.0,
+            skipped_by_gas
+        );
+        info!("📦 交易池剩余: {} 笔", self.pending_pool.len());
+        
+        Ok(selected)
+    }
+    
+    /// 将执行失败的交易放回池中
+    fn return_to_pool(&mut self, transactions: Vec<Transaction>) {
+        if transactions.is_empty() {
+            return;
+        }
+        
+        debug!("️ 将 {} 笔交易放回交易池", transactions.len());
+        
+        for tx in transactions {
+            if self.pending_pool.len() >= self.pool_max_size {
+                warn!("️ 交易池已满，丢弃交易: {:?}", tx.hash);
+                break;
+            }
+            self.pending_pool.push_front(tx);
+        }
+    }
+    
+    fn parse_gas_price(gas_hex: &str) -> Result<u64> {
+        let hex = gas_hex.trim_start_matches("0x");
+        u64::from_str_radix(hex, 16)
+            .map_err(|e| anyhow::anyhow!("Invalid gas: {}", e))
+    }
+    
+    fn parse_gas_limit(gas_hex: &str) -> Result<u64> {
+        let hex = gas_hex.trim_start_matches("0x");
+        u64::from_str_radix(hex, 16)
+            .map_err(|e| anyhow::anyhow!("Invalid gas: {}", e))
     }
 
     /// 从 Walrus 读取交易

@@ -55,8 +55,11 @@ impl BlockExecutor {
         let mut successful_txs = 0;
         let mut failed_txs = 0;
         
-        // 获取区块 gas 限制（默认 30M）
-        let block_gas_limit = block.header.gas_limit.unwrap_or(30_000_000);
+        tracing::info!(
+            "📦 开始执行区块 #{}, 交易数: {}",
+            block.header.number,
+            block.transactions.len()
+        );
         
         // 开始事务
         self.tx_executor.db_mut().begin_transaction()
@@ -73,30 +76,23 @@ impl BlockExecutor {
             // 预验证交易
             if let Err(e) = self.tx_executor.validate_transaction(tx) {
                 failed_txs += 1;
-                tracing::warn!("交易验证失败 [{}]: {}", tx_hash, e);
+                tracing::warn!("⚠️  交易验证失败 [{}]: {}", tx_hash, e);
                 continue; // 跳过该交易,不影响其他交易
             }
                     
             // 执行交易
             match self.tx_executor.execute(tx, block_env.clone()) {
                 Ok(result) => {
-                    // 检查区块 gas 限制（在累计前检查）
-                    let new_total_gas = total_gas_used.saturating_add(result.gas_used);
-                    if new_total_gas > block_gas_limit {
-                        tracing::warn!(
-                            "区块 gas 超限，跳过交易 [{}]: 当前累计 {} + 本次 {} = {} > 限制 {}",
-                            tx_hash,
-                            total_gas_used,
-                            result.gas_used,
-                            new_total_gas,
-                            block_gas_limit
-                        );
-                        failed_txs += 1;
-                        continue; // 跳过该交易，不影响后续交易
-                    }
+                    // 直接累计 gas 使用量
+                    total_gas_used += result.gas_used;
                     
-                    // gas 未超限，累计使用量
-                    total_gas_used = new_total_gas;
+                    tracing::debug!(
+                        "  ✓ 交易执行成功 [{}]: gas_used={}, 累计={}, status={}",
+                        tx_hash,
+                        result.gas_used,
+                        total_gas_used,
+                        if result.success { "成功" } else { "回滚" }
+                    );
                             
                     if result.success {
                         successful_txs += 1;
@@ -150,6 +146,7 @@ impl BlockExecutor {
                     // 执行失败,根据错误类型处理
                     if e.is_fatal() {
                         // 严重错误,回滚整个区块事务
+                        tracing::error!("❌ 严重错误，回滚区块事务: {}", e);
                         self.tx_executor.db_mut().rollback_transaction()
                             .map_err(|e| ExecutorError::Database(e.to_string()))?;
                                 
@@ -157,11 +154,19 @@ impl BlockExecutor {
                     } else {
                         // 非严重错误,跳过该交易
                         failed_txs += 1;
-                        tracing::warn!("交易执行失败 [{}]: {}", tx_hash, e);
+                        tracing::warn!("⚠️  交易执行失败 [{}]: {}", tx_hash, e);
                     }
                 }
             }
         }
+        
+        tracing::info!(
+            "✅ 区块 #{} 执行完成: 成功 {} 笔, 失败 {} 笔, 总 gas {})",
+            block.header.number,
+            successful_txs,
+            failed_txs,
+            total_gas_used
+        );
         
         // 提交事务
         self.tx_executor.db_mut().commit_transaction()
@@ -420,8 +425,8 @@ mod tests {
         
         let mut executor = BlockExecutor::new(db);
         
-        // 构建3笔交易，每笔消耗 21000 gas
-        // 设置区块 gas 限制为 50000，只能容纳前2笔
+        // 这个测试现在验证：即使区块设置了低 gas 限制，执行层也会执行所有交易
+        // （应该在选择阶段就过滤掉超限的交易）
         let tx1 = Transaction {
             from: "0x0742d35Cc6634C0532925a3b844Bc9e7595f0bEb".to_string(),
             to: Some("0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed".to_string()),
@@ -481,16 +486,20 @@ mod tests {
         
         let result = executor.execute_block(&block).await.unwrap();
         
-        // 验证结果：前2笔成功(21000 + 21000 = 42000)，第3笔因超限被跳过(42000 + 21000 = 63000 > 50000)
-        assert_eq!(result.successful_txs, 2, "应该有2笔成功交易");
-        assert_eq!(result.failed_txs, 1, "应该有1笔失败交易（gas超限）");
-        assert_eq!(result.total_gas_used, 42000, "总 gas 应该是 42000");
-        assert!(result.total_gas_used <= 50_000, "总 gas 不应超过限制");
+        // 执行阶段不再检查 gas 限制，所有3笔交易都会执行成功
+        // 这是期望的行为：应该在选择阶段就过滤掉超限的交易
+        assert_eq!(result.successful_txs, 3, "执行阶段不再检查 gas，所有3笔交易都执行成功");
+        assert_eq!(result.failed_txs, 0, "没有失败交易");
+        assert_eq!(result.total_gas_used, 63000, "总 gas 使用: 21000 * 3 = 63000");
         
-        println!("\n   ✓ 区块 gas 限制测试通过!");
+        // 注意：total_gas_used 会超过区块 gas_limit，这是预期的
+        // 因为执行阶段不再强制检查
+        assert!(result.total_gas_used > 50_000, "执行阶段允许超过区块 gas 限制");
+        
+        println!("\n   ✓ 执行阶段测试通过！");
         println!("   - 成功交易: {}", result.successful_txs);
         println!("   - 失败交易: {}", result.failed_txs);
-        println!("   - 总 Gas 使用: {}", result.total_gas_used);
-        println!("   - Gas 限制: 50000");
+        println!("   - 总 Gas 使用: {} (超过区块限制 50000)", result.total_gas_used);
+        println!("   - 说明：这是预期行为，应在选择阶段过滤超限交易");
     }
 }

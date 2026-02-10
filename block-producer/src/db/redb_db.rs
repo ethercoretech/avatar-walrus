@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use crate::db::{StateDatabase, DbError, TransactionBuffer};
 use crate::schema::{Account, StorageSlot, Block};
+use crate::wallet::get_builtin_wallets;
 
 // ==================== 表定义 ====================
 

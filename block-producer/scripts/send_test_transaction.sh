@@ -104,7 +104,7 @@ main() {
     local failed_count=0
     local tx_hashes=()
     
-    for i in $(seq 1 $count); do
+    for i in $(seq 0 $((count - 1))); do
         local tx_hash=$(send_transaction $i)
         if [[ "$tx_hash" != "FAILED" ]]; then
             success_count=$((success_count + 1))

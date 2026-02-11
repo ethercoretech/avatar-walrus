@@ -7,6 +7,6 @@ pub mod storage;
 pub mod code;
 pub mod block;
 
-pub use account::Account;
+pub use account::{Account, EMPTY_CODE_HASH};
 pub use storage::StorageSlot;
 pub use block::{Block, BlockHeader, Transaction, TransactionReceipt, Log};

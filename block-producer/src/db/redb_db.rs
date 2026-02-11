@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use std::sync::Arc;
 
 use crate::db::{StateDatabase, DbError, TransactionBuffer};
-use crate::schema::{Account, StorageSlot, Block};
+use crate::schema::{Account, StorageSlot, Block, EMPTY_CODE_HASH};
 use crate::wallet::get_builtin_wallets;
 
 // ==================== 表定义 ====================
@@ -161,7 +161,7 @@ impl RedbStateDB {
                     let account = Account {
                         balance: wallet.initial_balance_wei(),
                         nonce: 0,
-                        code_hash: B256::ZERO,
+                        code_hash: EMPTY_CODE_HASH,
                         storage_root: B256::ZERO,
                     };
                     

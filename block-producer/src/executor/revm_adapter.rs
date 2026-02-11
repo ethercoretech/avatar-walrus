@@ -58,21 +58,28 @@ impl Database for CachedRedbState {
         let db = self.db.read();
         let account = db.get_account(&address)?;
         
-        if let Some(acc) = account {
-            let info = AccountInfo {
+        // 3. 构建账户信息（如果不存在则返回默认空账户）
+        let info = if let Some(acc) = account {
+            AccountInfo {
                 balance: acc.balance,
                 nonce: acc.nonce,
                 code_hash: acc.code_hash,
                 code: None, // 延迟加载代码
-            };
-            
-            // 3. 更新缓存
-            self.cache.write().insert(address, info.clone());
-            
-            Ok(Some(info))
+            }
         } else {
-            Ok(None)
-        }
+            // 返回默认空账户（余额为0，nonce为0，空代码哈希）
+            AccountInfo {
+                balance: U256::ZERO,
+                nonce: 0,
+                code_hash: EMPTY_CODE_HASH,
+                code: None,
+            }
+        };
+        
+        // 4. 更新缓存
+        self.cache.write().insert(address, info.clone());
+        
+        Ok(Some(info))
     }
     
     /// 根据哈希获取合约字节码
@@ -121,10 +128,10 @@ impl RevmAdapter {
         let db_arc = Arc::new(RwLock::new(db));
         let cached_state = CachedRedbState::new(Arc::clone(&db_arc));
         
-        // 构建 EVM 实例
+        // 构建 EVM 实例 - 使用 Shanghai 规范避免 EIP-3607
         let evm = Evm::builder()
             .with_db(cached_state)
-            .with_spec_id(SpecId::CANCUN) // 使用 Cancun 硬分叉规范
+            .with_spec_id(SpecId::SHANGHAI) // 使用 Shanghai 规范（在 EIP-3607 之前）
             .build();
         
         Self {

@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# 发送测试交易脚本 (修正版)
-# 用法: ./scripts/send_test_transaction_fixed.sh [数量]
+# 用法: ./scripts/send_test_transaction.sh [数量] [起始_nonce]
 
 set -e
 
@@ -86,12 +85,14 @@ send_transaction() {
 # 主函数
 main() {
     local count=${1:-1}
+    local start_nonce=${2:-50}  # 默认从 nonce 50 开始
     
     echo "=== 发送测试交易 ==="
     echo "RPC 地址: $RPC_URL"
     echo "发送者: $FROM_ADDRESS"
     echo "接收者: $TO_ADDRESS"
     echo "交易数量: $count"
+    echo "起始 nonce: $start_nonce"
     echo ""
     
     # 检查 RPC 连接
@@ -105,7 +106,8 @@ main() {
     local tx_hashes=()
     
     for i in $(seq 0 $((count - 1))); do
-        local tx_hash=$(send_transaction $i)
+        local actual_nonce=$((start_nonce + i))
+        local tx_hash=$(send_transaction $actual_nonce)
         if [[ "$tx_hash" != "FAILED" ]]; then
             success_count=$((success_count + 1))
             tx_hashes+=("$tx_hash")

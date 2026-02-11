@@ -116,11 +116,22 @@ start_walrus_cluster() {
     sleep 5
     
     # 验证集群状态
-    if ./scripts/start_walrus_cluster.sh status | grep -q "运行中"; then
+    local cluster_status=$($PROJECT_ROOT/scripts/start_walrus_cluster.sh status 2>/dev/null)
+    if echo "$cluster_status" | grep -q "启动中"; then
         success "Walrus 集群启动成功"
     else
         error "Walrus 集群启动失败"
+        echo "集群状态详情:"
+        echo "$cluster_status"
         exit 1
+    fi
+    
+    # 注册 blockchain-txs topic
+    info "注册 blockchain-txs topic..."
+    if printf "REGISTER blockchain-txs\nexit\n" | timeout 10 "$PROJECT_ROOT/distributed-walrus/target/debug/walrus-cli" --addr 127.0.0.1:9091 >/dev/null 2>&1; then
+        success "Topic 注册成功"
+    else
+        warn "Topic 注册可能失败，请手动注册"
     fi
 }
 
@@ -246,17 +257,20 @@ show_status() {
     success "系统已准备就绪！"
 }
 
-# 停止系统
+# 彻底停止系统并清理数据
 stop_system() {
-    info "停止系统..."
+    info "停止系统并清理所有数据..."
     
+    # 1. 停止所有相关进程
+    info "停止所有相关进程..."
+    
+    # 停止通过 PID 文件记录的进程
     local pid_file="$PROJECT_ROOT/.system_pids"
-    
     if [[ -f "$pid_file" ]]; then
         while IFS=: read -r component pid; do
             if [[ -n "$component" && -n "$pid" && "$component" != "#"* ]]; then
                 if kill -0 $pid 2>/dev/null; then
-                    kill $pid
+                    kill $pid 2>/dev/null || true
                     info "已停止 $component (PID: $pid)"
                 fi
             fi
@@ -264,13 +278,59 @@ stop_system() {
         rm -f "$pid_file"
     fi
     
-    # 停止 Walrus 集群
+    # 强制杀死所有相关进程
+    pkill -f "block-producer" 2>/dev/null || true
+    pkill -f "rpc-gateway" 2>/dev/null || true
+    pkill -f "distributed-walrus" 2>/dev/null || true
+    
+    # 等待进程完全退出
+    sleep 2
+    
+    # 2. 停止 Walrus 集群
+    info "停止 Walrus 集群..."
     cd "$PROJECT_ROOT"
     if [[ -f "./scripts/start_walrus_cluster.sh" ]]; then
-        ./scripts/start_walrus_cluster.sh stop
+        ./scripts/start_walrus_cluster.sh stop 2>/dev/null || true
     fi
     
-    success "系统已停止"
+    # 3. 彻底清理所有数据目录
+    info "清理所有历史数据..."
+    
+    # 清理 Block Producer 数据
+    if [[ -d "$PROJECT_ROOT/block-producer/data" ]]; then
+        rm -rf "$PROJECT_ROOT/block-producer/data"
+        info "已清理 Block Producer 数据目录"
+    fi
+    
+    # 清理 Walrus 集群数据
+    if [[ -d "$PROJECT_ROOT/distributed-walrus/data" ]]; then
+        rm -rf "$PROJECT_ROOT/distributed-walrus/data"
+        info "已清理 Walrus 集群数据目录"
+    fi
+    
+    # 清理 Walrus 日志目录
+    if [[ -d "$PROJECT_ROOT/.walrus_logs" ]]; then
+        rm -rf "$PROJECT_ROOT/.walrus_logs"
+        info "已清理 Walrus 日志目录"
+    fi
+    
+    # 清理系统日志
+    if [[ -d "$PROJECT_ROOT/.logs" ]]; then
+        rm -rf "$PROJECT_ROOT/.logs"
+        info "已清理系统日志目录"
+    fi
+    
+    # 清理可能存在的临时数据文件
+    find "$PROJECT_ROOT" -name "*.redb" -type f -delete 2>/dev/null || true
+    find "$PROJECT_ROOT" -name "wal_*" -type f -delete 2>/dev/null || true
+    
+    # 4. 清理网络连接和端口占用
+    info "清理网络连接..."
+    for port in 8545 9091 9092 9093 6001 6002 6003; do
+        lsof -ti :$port | xargs kill -9 2>/dev/null || true
+    done
+    
+    success "系统已完全停止并清理所有数据"
 }
 
 # 信号处理

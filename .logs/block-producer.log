@@ -1,0 +1,383 @@
+[2m2026-02-11T14:31:07.099722Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 🚀 Block Producer 启动
+[2m2026-02-11T14:31:07.099751Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m    Walrus topic: blockchain-txs
+[2m2026-02-11T14:31:07.099755Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m    出块间隔: 5s
+[2m2026-02-11T14:31:07.099759Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m    每块最大交易数: 10000
+[2m2026-02-11T14:31:07.099761Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m    交易池容量: 100000 笔
+[2m2026-02-11T14:31:07.099764Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 
+[2m2026-02-11T14:31:07.102425Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:07.102433Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:12.102548Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:12.102571Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:17.101533Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:17.101562Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:22.102669Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:22.102699Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:27.102308Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:27.102338Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:32.101880Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:32.101900Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:37.102601Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:31:37.102619Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:31:42.113573Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 4 笔
+[2m2026-02-11T14:31:42.113591Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 4 笔, 预估 gas 84000/30000000 (0.3%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:31:42.113596Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:31:42.113604Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:31:42.118803Z[0m [32m INFO[0m [2mblock_producer::db::redb_db[0m[2m:[0m 💰 初始化内置账户: 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266, 余额: 10000 ETH
+[2m2026-02-11T14:31:42.118815Z[0m [32m INFO[0m [2mblock_producer::db::redb_db[0m[2m:[0m 💰 初始化内置账户: 0x70997970c51812dc3a010c7d01b50e0d17dc79c8, 余额: 5000 ETH
+[2m2026-02-11T14:31:42.118818Z[0m [32m INFO[0m [2mblock_producer::db::redb_db[0m[2m:[0m 💰 初始化内置账户: 0x3c44cdddb6a900fa2b585dd299e03d12fa4293bc, 余额: 5000 ETH
+[2m2026-02-11T14:31:42.119679Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 4
+[2m2026-02-11T14:31:42.119709Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 50, state: 0 })
+[2m2026-02-11T14:31:42.120892Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 50, state: 0 })
+[2m2026-02-11T14:31:47.119668Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:31:47.119696Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:31:47.119703Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:31:47.119709Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:31:47.121174Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:31:47.121201Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 54, state: 0 })
+[2m2026-02-11T14:31:47.122428Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 54, state: 0 })
+[2m2026-02-11T14:31:52.119033Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:31:52.119056Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:31:52.119063Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:31:52.119069Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:31:52.120252Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:31:52.120277Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 59, state: 0 })
+[2m2026-02-11T14:31:52.121852Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 59, state: 0 })
+[2m2026-02-11T14:31:57.121511Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:31:57.121532Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:31:57.121539Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:31:57.121546Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:31:57.123507Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:31:57.123537Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 64, state: 0 })
+[2m2026-02-11T14:31:57.124761Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 64, state: 0 })
+[2m2026-02-11T14:32:02.114568Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:32:02.114598Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:02.114605Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:02.114611Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:02.116257Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:32:02.116282Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 69, state: 0 })
+[2m2026-02-11T14:32:02.117398Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 69, state: 0 })
+[2m2026-02-11T14:32:07.118705Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 4 笔
+[2m2026-02-11T14:32:07.118726Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 4 笔, 预估 gas 84000/30000000 (0.3%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:07.118731Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:07.118738Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:07.120509Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 4
+[2m2026-02-11T14:32:07.120537Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 74, state: 0 })
+[2m2026-02-11T14:32:07.121850Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 74, state: 0 })
+[2m2026-02-11T14:32:12.121075Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:32:12.121098Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:12.121105Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:12.121112Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:12.122750Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:32:12.122775Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 78, state: 0 })
+[2m2026-02-11T14:32:12.123905Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 78, state: 0 })
+[2m2026-02-11T14:32:17.119486Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:32:17.119511Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:17.119518Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:17.119526Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:17.121229Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:32:17.121255Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 83, state: 0 })
+[2m2026-02-11T14:32:17.122379Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 83, state: 0 })
+[2m2026-02-11T14:32:22.118517Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:32:22.118552Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:22.118561Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:22.118572Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:22.120402Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:32:22.120445Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 88, state: 0 })
+[2m2026-02-11T14:32:22.121740Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 88, state: 0 })
+[2m2026-02-11T14:32:27.120347Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 5 笔
+[2m2026-02-11T14:32:27.120379Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 5 笔, 预估 gas 105000/30000000 (0.4%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:27.120388Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:27.120399Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:27.122286Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 5
+[2m2026-02-11T14:32:27.122319Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 93, state: 0 })
+[2m2026-02-11T14:32:27.123534Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 93, state: 0 })
+[2m2026-02-11T14:32:32.116779Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 2 笔
+[2m2026-02-11T14:32:32.116806Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 2 笔, 预估 gas 42000/30000000 (0.1%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:32:32.116813Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:32:32.116823Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:32:32.118669Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 2
+[2m2026-02-11T14:32:32.118701Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 98, state: 0 })
+[2m2026-02-11T14:32:32.119952Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 98, state: 0 })
+[2m2026-02-11T14:32:37.111418Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:32:37.111438Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:32:42.110468Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:32:42.110490Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:32:47.110523Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:32:47.110545Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:32:52.110796Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:32:52.110817Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:32:57.111038Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:32:57.111059Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:02.111984Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:02.112004Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:07.110839Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:07.110859Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:12.109191Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:12.109211Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:17.110461Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:17.110483Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:22.111206Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:22.111226Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:27.110595Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:27.110614Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:32.109979Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:32.109997Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:37.110795Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:37.110815Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:42.109488Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:42.109510Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:47.111516Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:47.111537Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:52.110789Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:52.110810Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:33:57.110069Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:33:57.110090Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:02.110967Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:02.110987Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:07.110347Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:07.110369Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:12.110670Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:12.110691Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:17.111695Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:17.111714Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:22.112129Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:22.112154Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:27.110609Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:27.110628Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:32.111380Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:32.111400Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:37.111128Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:37.111148Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:42.111185Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:42.111205Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:47.109842Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:47.109867Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:52.111612Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:52.111631Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:34:57.110862Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:34:57.110882Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:02.111161Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:02.111179Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:07.106552Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:07.106572Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:12.110429Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:12.110449Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:17.110356Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:17.110377Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:22.110669Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:22.110689Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:27.110668Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:27.110688Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:32.110602Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:32.110625Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:37.111562Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:37.111580Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:42.110441Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:42.110464Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:47.110412Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:47.110431Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:52.110312Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:52.110332Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:35:57.111072Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:35:57.111093Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:02.109868Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:02.109891Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:07.102981Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:07.103001Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:12.109673Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:12.109694Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:17.110134Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:17.110155Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:22.110805Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:22.110827Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:27.109911Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:27.109931Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:32.111642Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:32.111663Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:37.110060Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:37.110080Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:42.110372Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:42.110392Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:47.110572Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:47.110592Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:52.111112Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:52.111131Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:36:57.110289Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:36:57.110310Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:02.111640Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:02.111666Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:07.111079Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:07.111099Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:12.111352Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:12.111373Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:17.111440Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:17.111460Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:22.110718Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:22.110738Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:27.110920Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:27.110942Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:32.109872Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:32.109896Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:37.111503Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:37.111522Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:42.111091Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:42.111112Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:47.110607Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:47.110626Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:52.109952Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:52.109970Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:37:57.109224Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:37:57.109242Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:02.110733Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:02.110751Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:07.111138Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:07.111157Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:12.110660Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:12.110679Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:17.109302Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:17.109321Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:22.111274Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:22.111292Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:27.110185Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:27.110205Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:32.109052Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:32.109071Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:37.109838Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:37.109857Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:42.109911Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:42.109928Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:47.110351Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:47.110369Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:52.109594Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:52.109613Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:38:57.110561Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:38:57.110583Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:02.110629Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:02.110647Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:07.109774Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:07.109794Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:12.110334Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:12.110353Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:17.109555Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:17.109574Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:22.111403Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:22.111435Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:27.115762Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📋 开始交易选择: 候选交易 3 笔
+[2m2026-02-11T14:39:27.115780Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ✅ 交易选择完成: 已选 3 笔, 预估 gas 63000/30000000 (0.2%), 跳过 0 笔 (gas不足)
+[2m2026-02-11T14:39:27.115785Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 交易池剩余: 0 笔
+[2m2026-02-11T14:39:27.115792Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m 📦 提交区块 #0 到执行层...
+[2m2026-02-11T14:39:27.117472Z[0m [32m INFO[0m [2mblock_producer::executor::block_executor[0m[2m:[0m 📦 开始执行区块 #0, 交易数: 3
+[2m2026-02-11T14:39:27.117496Z[0m [31mERROR[0m [2mblock_producer::executor::block_executor[0m[2m:[0m ❌ 严重错误，回滚区块事务: EVM error: Transaction(NonceTooHigh { tx: 50, state: 0 })
+[2m2026-02-11T14:39:27.118620Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: Block execution failed: EVM error: Transaction(NonceTooHigh { tx: 50, state: 0 })
+[2m2026-02-11T14:39:32.110004Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:32.110022Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:37.111000Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:37.111019Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:42.110594Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:42.110613Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:47.110429Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:47.110450Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:52.103374Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:52.103394Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:39:57.109959Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:39:57.109978Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:02.109683Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:02.109701Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:07.109960Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:07.109976Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:12.109877Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:12.109889Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:17.110621Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:17.110634Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:22.110624Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:22.110639Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:27.110816Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:27.110829Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:32.109196Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:32.109209Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:37.110924Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:37.110940Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:42.110035Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:42.110059Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:47.110825Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:47.110843Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:52.110271Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:52.110288Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:40:57.109434Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:40:57.109449Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:02.110475Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:02.110489Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:07.109860Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:07.109878Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:12.109936Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:12.109955Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:17.109217Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:17.109233Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:22.109796Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:22.109811Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:27.111109Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:27.111127Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:32.110066Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:32.110080Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:37.110019Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:37.110043Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:42.109762Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:42.109787Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:47.109909Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:47.109937Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:52.110317Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:52.110345Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:41:57.110818Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:41:57.110840Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:02.110102Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:02.110132Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:07.111289Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:07.111318Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:12.111870Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:12.111901Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:17.111581Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:17.111610Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:22.110980Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:22.111000Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:27.111604Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:27.111622Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:32.110543Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:32.110560Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:37.111129Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:37.111146Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:42.112312Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:42.112329Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:47.111530Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:47.111548Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:52.111187Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:52.111204Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:42:57.109833Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:42:57.109850Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:02.110237Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:02.110256Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:07.110764Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:07.110781Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:12.110267Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:12.110283Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:17.109536Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:17.109554Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:22.110323Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:22.110338Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:27.112237Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:27.112257Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:32.110712Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:32.110729Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:37.111163Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:37.111180Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:42.110943Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:42.110960Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:47.110267Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:47.110285Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:52.110577Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:52.110595Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:43:57.110101Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:43:57.110118Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:44:02.111887Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:44:02.111903Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool
+[2m2026-02-11T14:44:07.109220Z[0m [32m INFO[0m [2mblock_producer[0m[2m:[0m ⭭️  交易池为空，跳过本轮出块
+[2m2026-02-11T14:44:07.109236Z[0m [31mERROR[0m [2mblock_producer[0m[2m:[0m ❌ 生成区块失败: No transactions in pool

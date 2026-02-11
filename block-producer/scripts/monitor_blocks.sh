@@ -56,8 +56,27 @@ get_latest_block_info() {
     echo ""
     
     # 监控日志输出
-    if [[ -f "target/debug/block-producer.log" ]]; then
-        tail -f target/debug/block-producer.log 2>/dev/null | while read line; do
+    local log_files=(
+        "../.logs/block-producer.log"
+        "target/debug/block-producer.log"
+        "/opt/rust/project/avatar-walrus/.logs/block-producer.log"
+    )
+    
+    local found_log=""
+    for log_file in "${log_files[@]}"; do
+        if [[ -f "$log_file" ]]; then
+            found_log="$log_file"
+            break
+        fi
+    done
+    
+    if [[ -n "$found_log" ]]; then
+        echo "正在监控日志文件: $found_log"
+        echo "监控模式 - 实时显示 Block Producer 输出"
+        echo "=========================================="
+        echo ""
+        
+        tail -f "$found_log" 2>/dev/null | while read line; do
             # 区块生成
             if echo "$line" | grep -q "区块 #[0-9]* 已生成"; then
                 local block_num=$(echo "$line" | grep -o "#[0-9]*" | tr -d '#')
@@ -81,6 +100,12 @@ get_latest_block_info() {
             if echo "$line" | grep -q "Gas 使用"; then
                 local gas=$(echo "$line" | grep -o "[0-9]*$")
                 echo "  Gas 使用: $gas"
+            fi
+            
+            # 交易数量
+            if echo "$line" | grep -q "交易数量.*[0-9]*"; then
+                local tx_count=$(echo "$line" | grep -o "[0-9]*$" | head -1)
+                echo "  交易数量: $tx_count"
             fi
         done
     else

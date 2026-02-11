@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# 发送测试交易脚本
-# 用法: ./scripts/send_test_transaction.sh [数量]
+# 发送测试交易脚本 (修正版)
+# 用法: ./scripts/send_test_transaction_fixed.sh [数量]
 
 set -e
 
@@ -61,7 +61,9 @@ send_transaction() {
                 \"from\": \"$FROM_ADDRESS\",
                 \"to\": \"$TO_ADDRESS\",
                 \"value\": \"$value\",
+                \"data\": \"0x\",
                 \"gas\": \"$GAS_LIMIT\",
+                \"gasPrice\": \"$GAS_PRICE\",
                 \"nonce\": \"0x$(printf '%x' $nonce)\"
             }],
             \"id\": $nonce
@@ -111,7 +113,7 @@ main() {
         fi
         
         # 小延迟避免过于频繁
-        sleep 0.1
+        sleep 1
     done
     
     echo ""

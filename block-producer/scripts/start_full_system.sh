@@ -89,6 +89,16 @@ check_ports() {
 
 # 启动 Walrus 集群
 start_walrus_cluster() {
+    info "清理旧的 Walrus 数据..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # 清理旧数据
+    if [[ -f "./scripts/start_walrus_cluster.sh" ]]; then
+        ./scripts/start_walrus_cluster.sh clean 2>/dev/null || true
+    fi
+    
+
     info "启动 Walrus 集群..."
     
     cd "$PROJECT_ROOT"

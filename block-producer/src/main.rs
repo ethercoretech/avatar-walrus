@@ -9,12 +9,8 @@ use std::time::Duration;
 use tracing::{info, warn, error, debug};
 use tracing_subscriber::{fmt, EnvFilter};
 
-// === 新增模块 ===
-mod db;
-mod schema;
-mod trie;
-mod executor;
-mod utils;
+// === 使用 lib 中的模块 ===
+use block_producer::{db, schema, trie, executor, utils, wallet};
 
 // === 区块链常量配置 ===
 // 使用 lib.rs 中定义的常量，保持单一来源

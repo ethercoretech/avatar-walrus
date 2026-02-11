@@ -7,5 +7,6 @@ pub mod schema;
 pub mod executor;
 pub mod trie;
 pub mod utils;
+pub mod wallet;
 
 pub const DEFAULT_BLOCK_GAS_LIMIT: u64 = 30_000_000;     

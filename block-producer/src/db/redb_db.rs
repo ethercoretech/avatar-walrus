@@ -80,11 +80,16 @@ impl RedbStateDB {
         write_txn.commit()
             .map_err(|e| DbError::Other(e.to_string()))?;
 
-        Ok(Self {
+        let db_instance = Self {
             db: Arc::new(db),
             tx_buffer: RwLock::new(None),
             changed_accounts: RwLock::new(Vec::new()),
-        })
+        };
+        
+        // 初始化内置钱包账户
+        db_instance.initialize_builtin_accounts()?;
+
+        Ok(db_instance)
     }
 
     /// 持久化区块到数据库
@@ -130,6 +135,52 @@ impl RedbStateDB {
         if !changed.contains(&address) {
             changed.push(address);
         }
+    }
+    /// 初始化内置钱包账户
+    /// 
+    /// 为所有预配置的测试账户创建初始余额
+    fn initialize_builtin_accounts(&self) -> Result<(), DbError> {
+        let wallets = get_builtin_wallets();
+        
+        let write_txn = self.db.begin_write()
+            .map_err(|e| DbError::Other(e.to_string()))?;
+        {
+            let mut table = write_txn.open_table(ACCOUNTS_TABLE)
+                .map_err(|e| DbError::Other(e.to_string()))?;
+            
+            for wallet in wallets {
+                let address_bytes: [u8; 20] = wallet.address.into();
+                
+                // 检查账户是否已存在
+                let exists = table.get(&address_bytes)
+                    .map_err(|e| DbError::Other(e.to_string()))?
+                    .is_some();
+                
+                if !exists {
+                    // 创建新账户
+                    let account = Account {
+                        balance: wallet.initial_balance_wei(),
+                        nonce: 0,
+                        code_hash: B256::ZERO,
+                        storage_root: B256::ZERO,
+                    };
+                    
+                    let data = bincode::serialize(&account)
+                        .map_err(|e| DbError::Serialization(e.to_string()))?;
+                    
+                    table.insert(&address_bytes, data.as_slice())
+                        .map_err(|e| DbError::Other(e.to_string()))?;
+                    
+                    tracing::info!("💰 初始化内置账户: {:?}, 余额: {} ETH", 
+                        wallet.address, 
+                        wallet.initial_balance_eth);
+                }
+            }
+        }
+        write_txn.commit()
+            .map_err(|e| DbError::Other(e.to_string()))?;
+        
+        Ok(())
     }
 }
 

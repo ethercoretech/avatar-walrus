@@ -17,6 +17,8 @@ distributed-walrus/test_data/
 distributed-walrus/data/
 rpc-gateway/target/
 block-producer/target/
+block-producer/data/
+block-producer/scripts/contracts/node_modules/
 tx-generator/target/
 tx-generator/generated_keys.json
 tx-generator/*.key
@@ -31,3 +33,5 @@ reth
 revm
 redb
 lighthouse
+.logs/
+.system_pids

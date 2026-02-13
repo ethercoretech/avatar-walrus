@@ -250,11 +250,11 @@ impl BlockProducer {
         
         info!("📋 开始交易选择: 候选交易 {} 笔", candidates.len());
         
-        // 按 gas price 降序排序（优先打包高价交易）
+        // 按 nonce 升序排序（EVM 要求按 nonce 顺序执行）
         candidates.sort_by(|a, b| {
-            let a_price = Self::parse_gas_price(&a.gas).unwrap_or(0);
-            let b_price = Self::parse_gas_price(&b.gas).unwrap_or(0);
-            b_price.cmp(&a_price)
+            let a_nonce = u64::from_str_radix(a.nonce.trim_start_matches("0x"), 16).unwrap_or(0);
+            let b_nonce = u64::from_str_radix(b.nonce.trim_start_matches("0x"), 16).unwrap_or(0);
+            a_nonce.cmp(&b_nonce)
         });
         
         let mut selected = Vec::new();

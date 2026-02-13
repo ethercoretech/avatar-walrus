@@ -10,12 +10,12 @@
 # 启动完整系统 (Walrus + RPC Gateway + Block Producer)
 ./scripts/start_full_system.sh start
 
+# 监控区块生成
+./scripts/monitor_blocks.sh
+
 # 发送测试交易
 cd block-producer
 ./scripts/send_test_transaction.sh 5
-
-# 监控区块生成
-./scripts/monitor_blocks.sh
 
 # 验证数据库状态
 ./scripts/verify_database.sh

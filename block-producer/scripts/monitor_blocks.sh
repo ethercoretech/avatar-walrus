@@ -77,35 +77,37 @@ get_latest_block_info() {
         echo ""
         
         tail -f "$found_log" 2>/dev/null | while read line; do
-            # 区块生成
-            if echo "$line" | grep -q "区块 #[0-9]* 已生成"; then
-                local block_num=$(echo "$line" | grep -o "#[0-9]*" | tr -d '#')
-                highlight "新区块 #$block_num 生成"
+            if echo "$line" | grep -qE "区块 #[0-9]+ 已生成"; then
+                local block_num=$(echo "$line" | grep -oE "#[0-9]+" | tr -d '#')
+                highlight "📦 新区块 #$block_num 生成"
             fi
             
-            # 执行完成
-            if echo "$line" | grep -q "✓ 执行完成"; then
-                local success=$(echo "$line" | grep -o "[0-9]* 成功")
-                local failed=$(echo "$line" | grep -o "[0-9]* 失败")
-                echo "  执行结果: $success, $failed"
+            if echo "$line" | grep -q "执行完成"; then
+                if echo "$line" | grep -qE "[0-9]+ 成功"; then
+                    local success=$(echo "$line" | grep -oE "[0-9]+ 成功" | head -1)
+                    local failed=$(echo "$line" | grep -oE "[0-9]+ 失败" | head -1)
+                    echo "  ✓ 执行结果: $success, $failed"
+                fi
             fi
             
-            # 状态根
-            if echo "$line" | grep -q "状态根.*0x"; then
-                local state_root=$(echo "$line" | grep -o "0x[0-9a-f]*")
-                echo "  状态根: $state_root"
+            if echo "$line" | grep -q "状态根"; then
+                local state_root=$(echo "$line" | grep -oE "0x[0-9a-f]+" | head -1)
+                echo "  🌳 状态根: $state_root"
             fi
             
-            # Gas 使用
             if echo "$line" | grep -q "Gas 使用"; then
-                local gas=$(echo "$line" | grep -o "[0-9]*$")
-                echo "  Gas 使用: $gas"
+                local gas=$(echo "$line" | grep -oE "[0-9]+$")
+                echo "  ⛽ Gas 使用: $gas"
             fi
             
-            # 交易数量
-            if echo "$line" | grep -q "交易数量.*[0-9]*"; then
-                local tx_count=$(echo "$line" | grep -o "[0-9]*$" | head -1)
-                echo "  交易数量: $tx_count"
+            if echo "$line" | grep -q "交易数量"; then
+                local tx_count=$(echo "$line" | grep -oE "[0-9]+$" | head -1)
+                echo "  📝 交易数量: $tx_count"
+            fi
+            
+            if echo "$line" | grep -q "区块哈希"; then
+                local block_hash=$(echo "$line" | grep -oE "0x[0-9a-f]+" | head -1)
+                echo "  🔗 区块哈希: $block_hash"
             fi
         done
     else
@@ -132,9 +134,9 @@ show_stats() {
     echo "=== 端口状态 ==="
     for port in 8545 9091 9092 9093; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-            echo "端口 $port: ${GREEN}开放${NC}"
+            echo -e "端口 $port: ${GREEN}开放${NC}"
         else
-            echo "端口 $port: ${RED}关闭${NC}"
+            echo -e "端口 $port: ${RED}关闭${NC}"
         fi
     done
 }

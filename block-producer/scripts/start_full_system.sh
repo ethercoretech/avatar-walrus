@@ -257,43 +257,93 @@ show_status() {
     success "系统已准备就绪！"
 }
 
+# 优雅停止单个进程
+graceful_stop() {
+    local component=$1
+    local pid=$2
+    local timeout=${3:-10}
+    
+    if ! ps -p $pid >/dev/null 2>&1; then
+        warn "$component 进程不存在 (PID: $pid)"
+        return 0
+    fi
+    
+    info "停止 $component (PID: $pid)..."
+    kill $pid 2>/dev/null || true
+    
+    local elapsed=0
+    while ps -p $pid >/dev/null 2>&1 && [ $elapsed -lt $timeout ]; do
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    
+    if ps -p $pid >/dev/null 2>&1; then
+        warn "$component 未能在 ${timeout}s 内停止，强制终止..."
+        kill -9 $pid 2>/dev/null || true
+        sleep 1
+    fi
+    
+    if ps -p $pid >/dev/null 2>&1; then
+        error "$component 停止失败"
+        return 1
+    else
+        info "已停止 $component (PID: $pid)"
+        return 0
+    fi
+}
+
 # 彻底停止系统并清理数据
 stop_system() {
     info "停止系统并清理所有数据..."
     
-    # 1. 停止所有相关进程
-    info "停止所有相关进程..."
-    
-    # 停止通过 PID 文件记录的进程
     local pid_file="$PROJECT_ROOT/.system_pids"
+    
+    # 1. 先停止 Block Producer 和 RPC Gateway (通过 PID 文件优雅停止)
+    info "停止应用层服务..."
+    
     if [[ -f "$pid_file" ]]; then
         while IFS=: read -r component pid; do
-            if [[ -n "$component" && -n "$pid" && "$component" != "#"* ]]; then
-                if kill -0 $pid 2>/dev/null; then
-                    kill $pid 2>/dev/null || true
-                    info "已停止 $component (PID: $pid)"
-                fi
+            # 跳过空行和注释行
+            if [[ -z "$component" || -z "$pid" ]]; then
+                continue
+            fi
+            if [[ "$component" == \#* ]]; then
+                continue
+            fi
+            
+            # 只处理应用层服务，Walrus 由集群脚本处理
+            if [[ "$component" == "block-producer" || "$component" == "rpc-gateway" ]]; then
+                graceful_stop "$component" "$pid" 10
             fi
         done < "$pid_file"
         rm -f "$pid_file"
     fi
     
-    # 强制杀死所有相关进程
-    pkill -f "block-producer" 2>/dev/null || true
-    pkill -f "rpc-gateway" 2>/dev/null || true
-    pkill -f "distributed-walrus" 2>/dev/null || true
+    # 确保应用层进程完全停止
+    sleep 1
     
-    # 等待进程完全退出
-    sleep 2
-    
-    # 2. 停止 Walrus 集群
-    info "停止 Walrus 集群..."
+    # 2. 停止 Walrus 集群 (使用集群管理脚本优雅停止)
     cd "$PROJECT_ROOT"
     if [[ -f "./scripts/start_walrus_cluster.sh" ]]; then
         ./scripts/start_walrus_cluster.sh stop 2>/dev/null || true
     fi
     
-    # 3. 彻底清理所有数据目录
+    # 3. 强制清理残留进程 (安全网)
+    info "检查残留进程..."
+    local residual=0
+    for proc_name in "block-producer" "rpc-gateway" "distributed-walrus"; do
+        if pgrep -f "$proc_name" >/dev/null 2>&1; then
+            warn "发现残留 $proc_name 进程，强制终止..."
+            pkill -9 -f "$proc_name" 2>/dev/null || true
+            residual=$((residual + 1))
+        fi
+    done
+    
+    if [[ $residual -gt 0 ]]; then
+        sleep 2
+    fi
+    
+    # 4. 清理所有历史数据
     info "清理所有历史数据..."
     
     # 清理 Block Producer 数据
@@ -320,14 +370,22 @@ stop_system() {
         info "已清理系统日志目录"
     fi
     
+    # 清理 PID 目录
+    if [[ -d "$PROJECT_ROOT/.walrus_pids" ]]; then
+        rm -rf "$PROJECT_ROOT/.walrus_pids"
+    fi
+    
     # 清理可能存在的临时数据文件
     find "$PROJECT_ROOT" -name "*.redb" -type f -delete 2>/dev/null || true
     find "$PROJECT_ROOT" -name "wal_*" -type f -delete 2>/dev/null || true
     
-    # 4. 清理网络连接和端口占用
+    # 5. 清理网络连接和端口占用
     info "清理网络连接..."
     for port in 8545 9091 9092 9093 6001 6002 6003; do
-        lsof -ti :$port | xargs kill -9 2>/dev/null || true
+        local port_pids=$(lsof -ti :$port 2>/dev/null || true)
+        if [[ -n "$port_pids" ]]; then
+            echo "$port_pids" | xargs kill -9 2>/dev/null || true
+        fi
     done
     
     success "系统已完全停止并清理所有数据"
@@ -394,17 +452,21 @@ main() {
             echo "=== 系统状态 ==="
             echo ""
             
-            # 检查进程
             local pid_file="$PROJECT_ROOT/.system_pids"
             if [[ -f "$pid_file" ]]; then
                 echo "运行中的组件:"
                 while IFS=: read -r component pid; do
-                    if [[ -n "$component" && -n "$pid" && "$component" != "#"* ]]; then
-                        if ps -p $pid >/dev/null 2>&1; then
-                            echo "  ✓ $component (PID: $pid) 运行中"
-                        else
-                            echo "  ✗ $component (PID: $pid) 已停止"
-                        fi
+                    if [[ -z "$component" || -z "$pid" ]]; then
+                        continue
+                    fi
+                    if [[ "$component" == \#* ]]; then
+                        continue
+                    fi
+                    
+                    if ps -p $pid >/dev/null 2>&1; then
+                        echo "  ✓ $component (PID: $pid) 运行中"
+                    else
+                        echo "  ✗ $component (PID: $pid) 已停止"
                     fi
                 done < "$pid_file"
             else
@@ -412,10 +474,9 @@ main() {
             fi
             
             echo ""
-            # 检查 Walrus 集群
+            echo "Walrus 集群状态:"
             cd "$PROJECT_ROOT"
             if [[ -f "./scripts/start_walrus_cluster.sh" ]]; then
-                echo "Walrus 集群状态:"
                 ./scripts/start_walrus_cluster.sh status
             fi
             ;;

@@ -47,6 +47,26 @@ check_rpc() {
     success "RPC Gateway 连接正常"
 }
 
+# 获取账户当前 nonce
+get_current_nonce() {
+    local address=$1
+    local response=$(curl -s -X POST "$RPC_URL" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"jsonrpc\": \"2.0\",
+            \"method\": \"eth_getTransactionCount\",
+            \"params\": [\"$address\", \"latest\"],
+            \"id\": 1
+        }")
+    
+    local nonce_hex=$(echo "$response" | grep -o '"result":"[^"]*"' | cut -d'"' -f4)
+    if [[ -n "$nonce_hex" && "$nonce_hex" != "null" ]]; then
+        echo $((16#${nonce_hex#0x}))
+    else
+        echo 0
+    fi
+}
+
 # 发送单个交易
 send_transaction() {
     local nonce=$1
@@ -85,18 +105,26 @@ send_transaction() {
 # 主函数
 main() {
     local count=${1:-1}
-    local start_nonce=${2:-50}  # 默认从 nonce 50 开始
     
     echo "=== 发送测试交易 ==="
     echo "RPC 地址: $RPC_URL"
     echo "发送者: $FROM_ADDRESS"
     echo "接收者: $TO_ADDRESS"
     echo "交易数量: $count"
-    echo "起始 nonce: $start_nonce"
-    echo ""
     
     # 检查 RPC 连接
     check_rpc
+    
+    # 自动获取当前 nonce (如果未手动指定)
+    local start_nonce
+    if [[ -n "$2" ]]; then
+        start_nonce=$2
+        echo "起始 nonce: $start_nonce (手动指定)"
+    else
+        start_nonce=$(get_current_nonce "$FROM_ADDRESS")
+        echo "起始 nonce: $start_nonce (自动获取)"
+    fi
+    echo ""
     
     echo "开始发送 $count 笔交易..."
     echo ""
@@ -116,7 +144,7 @@ main() {
         fi
         
         # 小延迟避免过于频繁
-        sleep 1
+        sleep 0.1
     done
     
     echo ""

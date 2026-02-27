@@ -21,6 +21,10 @@ use tokio::time::Instant;
 use tracing::{debug, error, info, warn};
 use tracing_subscriber::{fmt, EnvFilter};
 
+// Block Producer 类型导入
+use block_producer::db::{RedbStateDB, StateDatabase};
+use alloy_primitives::Address;
+
 /// RPC Gateway
 ///
 /// 接收外部钱包的区块链交易，并写入 Walrus 服务器
@@ -62,6 +66,10 @@ struct Args {
     /// 请求超时时间（秒）
     #[arg(long, default_value = "30")]
     request_timeout_secs: u64,
+
+    /// 状态数据库路径（与 block-producer 共享）
+    #[arg(long, default_value = "./data/block_producer_state_blockchain-txs.redb")]
+    state_db_path: String,
 }
 
 /// 区块链交易数据结构（简化版）
@@ -221,6 +229,14 @@ pub trait WalrusRpcApi {
     /// 健康检查
     #[method(name = "health")]
     async fn health(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
+
+    /// 获取账户交易计数（nonce）
+    #[method(name = "eth_getTransactionCount")]
+    async fn get_transaction_count(
+        &self,
+        address: String,
+        block_number: Option<String>,
+    ) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
 }
 
 /// RPC 服务实现
@@ -235,6 +251,8 @@ pub struct WalrusRpcServer {
     semaphore: Arc<Semaphore>,
     /// 请求超时时间
     request_timeout: Duration,
+    /// 状态数据库（只读访问 block-producer 的数据库）
+    state_db: Arc<RedbStateDB>,
 }
 
 impl WalrusRpcServer {
@@ -246,6 +264,7 @@ impl WalrusRpcServer {
         max_batch_size: usize,
         request_timeout: Duration,
         enable_batching: bool,
+        state_db_path: String,
     ) -> Self {
         let walrus_client = CliClient::new(walrus_addr);
 
@@ -261,6 +280,9 @@ impl WalrusRpcServer {
             None
         };
 
+        // 打开状态数据库（只读模式共享 block-producer 的数据库）
+        let state_db = Arc::new(RedbStateDB::new(&state_db_path).expect("Failed to open state database"));
+
         Self {
             walrus_client,
             default_topic,
@@ -268,6 +290,7 @@ impl WalrusRpcServer {
             batch_processor,
             semaphore: Arc::new(Semaphore::new(max_concurrent_requests)),
             request_timeout,
+            state_db,
         }
     }
 
@@ -490,6 +513,42 @@ impl WalrusRpcApiServer for WalrusRpcServer {
             }
         }
     }
+
+    async fn get_transaction_count(
+        &self,
+        address: String,
+        _block_number: Option<String>,
+    ) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
+        debug!("收到 get_transaction_count 请求: address={}", address);
+
+        // 1. 解析地址（移除 0x 前缀）
+        let addr_hex = address.trim_start_matches("0x").trim_start_matches("0X");
+        
+        // 2. 解码十六进制地址
+        let addr_bytes = hex::decode(addr_hex)
+            .map_err(|_| RpcError::InvalidParams.into_error_object("Invalid address format"))?;
+        
+        // 3. 验证地址长度（必须是 20 字节）
+        if addr_bytes.len() != 20 {
+            return Err(RpcError::InvalidParams.into_error_object("Address must be 20 bytes"));
+        }
+        
+        // 4. 转换为 Address 类型
+        let addr = Address::from_slice(&addr_bytes);
+        
+        // 5. 从状态数据库查询账户
+        let account = self.state_db
+            .get_account(&addr)
+            .map_err(|e| RpcError::InternalError.into_error_object(format!("Database error: {}", e)))?;
+        
+        // 6. 获取 nonce（如果账户不存在则返回 0）
+        let nonce = account.map(|a| a.nonce).unwrap_or(0);
+        
+        debug!("获取到 nonce: address={:?}, nonce={}", addr, nonce);
+        
+        // 7. 返回十六进制格式的 nonce
+        Ok(format!("0x{:x}", nonce))
+    }
 }
 
 async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
@@ -516,6 +575,7 @@ async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
         args.max_batch_size,
         Duration::from_secs(args.request_timeout_secs),
         args.batch_interval_ms > 0, // 启用批量处理
+        args.state_db_path.clone(),
     );
 
     let handle = server.start(rpc_impl.into_rpc());

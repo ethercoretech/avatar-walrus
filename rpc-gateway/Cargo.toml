@@ -7,6 +7,9 @@ edition = "2021"
 # Walrus 客户端
 distributed-walrus = { path = "../distributed-walrus" }
 
+# Block Producer（共享状态数据库类型）
+block-producer = { path = "../block-producer" }
+
 # 异步运行时
 tokio = { version = "1", features = ["full"] }
 
@@ -40,3 +43,6 @@ anyhow = "1.0"
 # 工具
 hex = "0.4"
 sha2 = "0.10"
+
+# 以太坊类型
+alloy-primitives = { version = "0.7", features = ["serde"] }

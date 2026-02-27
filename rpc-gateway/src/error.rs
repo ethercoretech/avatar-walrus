@@ -2,6 +2,7 @@
 #[repr(i32)]
 #[derive(Debug, Clone, Copy)]
 pub enum RpcError {
+    InvalidParams = -32602,
     SerializationError = -32000,
     WalrusConnectionFailed = -32002,
     WalrusWriteFailed = -32003,
@@ -12,6 +13,7 @@ pub enum RpcError {
 impl RpcError {
     fn message(&self) -> &'static str {
         match self {
+            RpcError::InvalidParams => "无效参数",
             RpcError::SerializationError => "序列化失败",
             RpcError::WalrusConnectionFailed => "Walrus 连接失败",
             RpcError::WalrusWriteFailed => "写入失败",

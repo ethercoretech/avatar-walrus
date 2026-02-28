@@ -152,6 +152,7 @@ start_rpc_gateway() {
         --walrus-addr 127.0.0.1:9091 \
         --rpc-host 127.0.0.1 \
         --rpc-port 8545 \
+        --state-db-path "$PROJECT_ROOT/block-producer/data/block_producer_state_blockchain-txs.redb" \
         > "$PROJECT_ROOT/.logs/rpc-gateway.log" 2>&1 &
     
     local pid=$!

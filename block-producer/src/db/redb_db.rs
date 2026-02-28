@@ -50,35 +50,54 @@ pub struct RedbStateDB {
 }
 
 impl RedbStateDB {
-    /// 创建或打开 Redb 数据库
+    /// 创建或打开 Redb 数据库（读写模式）
     pub fn new(path: &str) -> Result<Self, DbError> {
+        Self::open_internal(path, false)
+    }
+
+    /// 以只读模式打开 Redb 数据库（用于 rpc-gateway 等只读访问）
+    pub fn open_readonly(path: &str) -> Result<Self, DbError> {
+        Self::open_internal(path, true)
+    }
+
+    /// 内部打开方法
+    fn open_internal(path: &str, readonly: bool) -> Result<Self, DbError> {
         // 确保父目录存在
         if let Some(parent) = std::path::Path::new(path).parent() {
             std::fs::create_dir_all(parent)
                 .map_err(|e| DbError::Io(e))?;
         }
         
-        // 创建数据库
-        let db = Database::create(path)
-            .map_err(|e| DbError::Other(format!("Failed to create database: {}", e)))?;
+        // 创建或打开数据库
+        let db = if readonly {
+            // 只读模式：使用 Database::open 打开已有数据库
+            Database::open(path)
+                .map_err(|e| DbError::Other(format!("Failed to open database (readonly): {}", e)))?
+        } else {
+            // 读写模式：创建或打开数据库
+            Database::create(path)
+                .map_err(|e| DbError::Other(format!("Failed to create database: {}", e)))?
+        };
         
-        // 初始化所有表
-        let write_txn = db.begin_write()
-            .map_err(|e| DbError::Other(e.to_string()))?;
-        {
-            let _ = write_txn.open_table(ACCOUNTS_TABLE)
+        // 初始化所有表（只在读写模式下）
+        if !readonly {
+            let write_txn = db.begin_write()
                 .map_err(|e| DbError::Other(e.to_string()))?;
-            let _ = write_txn.open_table(STORAGE_TABLE)
-                .map_err(|e| DbError::Other(e.to_string()))?;
-            let _ = write_txn.open_table(CODE_TABLE)
-                .map_err(|e| DbError::Other(e.to_string()))?;
-            let _ = write_txn.open_table(BLOCKS_TABLE)
-                .map_err(|e| DbError::Other(e.to_string()))?;
-            let _ = write_txn.open_table(BLOCK_HASHES_TABLE)
+            {
+                let _ = write_txn.open_table(ACCOUNTS_TABLE)
+                    .map_err(|e| DbError::Other(e.to_string()))?;
+                let _ = write_txn.open_table(STORAGE_TABLE)
+                    .map_err(|e| DbError::Other(e.to_string()))?;
+                let _ = write_txn.open_table(CODE_TABLE)
+                    .map_err(|e| DbError::Other(e.to_string()))?;
+                let _ = write_txn.open_table(BLOCKS_TABLE)
+                    .map_err(|e| DbError::Other(e.to_string()))?;
+                let _ = write_txn.open_table(BLOCK_HASHES_TABLE)
+                    .map_err(|e| DbError::Other(e.to_string()))?;
+            }
+            write_txn.commit()
                 .map_err(|e| DbError::Other(e.to_string()))?;
         }
-        write_txn.commit()
-            .map_err(|e| DbError::Other(e.to_string()))?;
 
         let db_instance = Self {
             db: Arc::new(db),
@@ -86,8 +105,10 @@ impl RedbStateDB {
             changed_accounts: RwLock::new(Vec::new()),
         };
         
-        // 初始化内置钱包账户
-        db_instance.initialize_builtin_accounts()?;
+        // 初始化内置钱包账户（只在读写模式下）
+        if !readonly {
+            db_instance.initialize_builtin_accounts()?;
+        }
 
         Ok(db_instance)
     }

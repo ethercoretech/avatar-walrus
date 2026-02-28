@@ -251,8 +251,8 @@ pub struct WalrusRpcServer {
     semaphore: Arc<Semaphore>,
     /// 请求超时时间
     request_timeout: Duration,
-    /// 状态数据库（只读访问 block-producer 的数据库）
-    state_db: Arc<RedbStateDB>,
+    /// 状态数据库路径（用于定期刷新读取）
+    state_db_path: String,
 }
 
 impl WalrusRpcServer {
@@ -280,9 +280,6 @@ impl WalrusRpcServer {
             None
         };
 
-        // 打开状态数据库（只读模式共享 block-producer 的数据库）
-        let state_db = Arc::new(RedbStateDB::new(&state_db_path).expect("Failed to open state database"));
-
         Self {
             walrus_client,
             default_topic,
@@ -290,7 +287,7 @@ impl WalrusRpcServer {
             batch_processor,
             semaphore: Arc::new(Semaphore::new(max_concurrent_requests)),
             request_timeout,
-            state_db,
+            state_db_path,
         }
     }
 
@@ -536,17 +533,27 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         // 4. 转换为 Address 类型
         let addr = Address::from_slice(&addr_bytes);
         
-        // 5. 从状态数据库查询账户
-        let account = self.state_db
-            .get_account(&addr)
-            .map_err(|e| RpcError::InternalError.into_error_object(format!("Database error: {}", e)))?;
-        
-        // 6. 获取 nonce（如果账户不存在则返回 0）
-        let nonce = account.map(|a| a.nonce).unwrap_or(0);
+        // 5. 尝试从状态数据库查询账户（短暂打开数据库）
+        let nonce = match RedbStateDB::open_readonly(&self.state_db_path) {
+            Ok(state_db) => {
+                match state_db.get_account(&addr) {
+                    Ok(account) => account.map(|a| a.nonce).unwrap_or(0),
+                    Err(e) => {
+                        warn!("查询账户失败: {}, 返回 nonce=0", e);
+                        0
+                    }
+                }
+            }
+            Err(e) => {
+                // 数据库可能被 block-producer 锁定，返回默认值 0
+                warn!("无法打开状态数据库 (可能被锁定): {}, 返回 nonce=0", e);
+                0
+            }
+        };
         
         debug!("获取到 nonce: address={:?}, nonce={}", addr, nonce);
         
-        // 7. 返回十六进制格式的 nonce
+        // 6. 返回十六进制格式的 nonce
         Ok(format!("0x{:x}", nonce))
     }
 }

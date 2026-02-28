@@ -237,6 +237,14 @@ pub trait WalrusRpcApi {
         address: String,
         block_number: Option<String>,
     ) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
+
+    /// 获取链 ID
+    #[method(name = "eth_chainId")]
+    async fn chain_id(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
+
+    /// 获取区块号
+    #[method(name = "eth_blockNumber")]
+    async fn block_number(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned>;
 }
 
 /// RPC 服务实现
@@ -253,6 +261,9 @@ pub struct WalrusRpcServer {
     request_timeout: Duration,
     /// 状态数据库路径（用于定期刷新读取）
     state_db_path: String,
+    
+    /// 链 ID（用于 EIP-155）
+    chain_id: u64,
 }
 
 impl WalrusRpcServer {
@@ -265,6 +276,7 @@ impl WalrusRpcServer {
         request_timeout: Duration,
         enable_batching: bool,
         state_db_path: String,
+        chain_id: u64,
     ) -> Self {
         let walrus_client = CliClient::new(walrus_addr);
 
@@ -288,6 +300,7 @@ impl WalrusRpcServer {
             semaphore: Arc::new(Semaphore::new(max_concurrent_requests)),
             request_timeout,
             state_db_path,
+            chain_id,
         }
     }
 
@@ -556,6 +569,34 @@ impl WalrusRpcApiServer for WalrusRpcServer {
         // 6. 返回十六进制格式的 nonce
         Ok(format!("0x{:x}", nonce))
     }
+
+    async fn chain_id(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
+        // 返回配置的链 ID（十六进制格式）
+        Ok(format!("0x{:x}", self.chain_id))
+    }
+
+    async fn block_number(&self) -> Result<String, jsonrpsee::types::ErrorObjectOwned> {
+        // 尝试从状态数据库读取最新区块号
+        match RedbStateDB::open_readonly(&self.state_db_path) {
+            Ok(state_db) => {
+                // 从数据库读取最新区块（简化实现：从 0 开始递增查找）
+                // TODO: 实现更高效的最新区块查询
+                let mut block_number = 0u64;
+                for i in 0..1000000 {
+                    match state_db.get_block(i) {
+                        Ok(Some(_)) => block_number = i,
+                        Ok(None) => break,
+                        Err(_) => break,
+                    }
+                }
+                Ok(format!("0x{:x}", block_number))
+            }
+            Err(e) => {
+                warn!("无法打开状态数据库读取区块号：{}, 返回 0", e);
+                Ok("0x0".to_string())
+            }
+        }
+    }
 }
 
 async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
@@ -574,6 +615,9 @@ async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
     // 我们在应用层使用 Semaphore 来控制并发
     let server = Server::builder().build(&bind_addr).await?;
 
+    // 配置链 ID（默认 31337，Hardhat/Foundry 常用测试链 ID）
+    let chain_id: u64 = 31337;
+    
     let rpc_impl = WalrusRpcServer::new(
         args.walrus_addr.clone(),
         args.default_topic.clone(),
@@ -583,6 +627,7 @@ async fn start_rpc_server(args: Args) -> Result<ServerHandle> {
         Duration::from_secs(args.request_timeout_secs),
         args.batch_interval_ms > 0, // 启用批量处理
         args.state_db_path.clone(),
+        chain_id,
     );
 
     let handle = server.start(rpc_impl.into_rpc());

@@ -115,19 +115,27 @@ start_node() {
         return 1
     fi
     
-    # 构建启动命令
-    local cmd="cargo run --bin distributed-walrus -- \
-        --node-id $node_id \
-        --raft-port $raft_port \
-        --client-port $client_port"
-    
+    # 优先使用已编译的二进制，避免 cargo run 编译 30s+ 导致端口等待超时
+    cd "$DISTRIBUTED_WALRUS_DIR"
+    local binary=""
+    if [ -x "./target/release/distributed-walrus" ]; then
+        binary="./target/release/distributed-walrus"
+    elif [ -x "./target/debug/distributed-walrus" ]; then
+        binary="./target/debug/distributed-walrus"
+    fi
+
+    local cmd=""
+    if [ -n "$binary" ]; then
+        cmd="$binary --node-id $node_id --raft-port $raft_port --client-port $client_port"
+    else
+        cmd="cargo run --bin distributed-walrus -- --node-id $node_id --raft-port $raft_port --client-port $client_port"
+    fi
     if [ -n "$join_addr" ]; then
         cmd="$cmd --join $join_addr"
     fi
-    
+
     # 启动节点
     info "启动节点 $node_id (Raft: $raft_port, Client: $client_port)..."
-    cd "$DISTRIBUTED_WALRUS_DIR"
     
     # 在后台运行并记录 PID
     nohup $cmd > "$log_file" 2>&1 &
@@ -215,9 +223,9 @@ start_cluster() {
     # 启动节点 1 (引导节点)
     start_node $NODE1_ID $NODE1_RAFT_PORT $NODE1_CLIENT_PORT
     
-    # 等待节点 1 的端口就绪
-    if ! wait_for_port $NODE1_CLIENT_PORT 30; then
-        error "节点 1 启动失败"
+    # 等待节点 1 的端口就绪（首次无二进制时 cargo 会编译约 35s，故给 90s）
+    if ! wait_for_port $NODE1_CLIENT_PORT 90; then
+        error "节点 1 启动失败（可查看 .walrus_logs/node_1.log）"
         return 1
     fi
     

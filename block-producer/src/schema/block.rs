@@ -247,6 +247,7 @@ pub struct Log {
     pub log_index: u64,
 }
 
+
 // 为 TransactionReceipt 实现 RLP 编码
 impl Encodable for TransactionReceipt {
     fn encode(&self, out: &mut dyn BufMut) {
@@ -297,6 +298,7 @@ impl Encodable for Log {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
     
     #[test]
     fn test_transaction_parsing() {
@@ -339,5 +341,99 @@ mod tests {
         };
         
         assert!(tx.is_create());
+    }
+
+    #[test]
+    fn block_hash_changes_when_header_changes() {
+        let header1 = BlockHeader {
+            number: 1,
+            parent_hash: "0x01".to_string(),
+            timestamp: Utc::now(),
+            tx_count: 0,
+            transactions_root: "0x00".to_string(),
+            state_root: None,
+            gas_used: None,
+            gas_limit: Some(30_000_000),
+            receipts_root: None,
+        };
+        let header2 = BlockHeader {
+            number: 2,
+            ..header1.clone()
+        };
+
+        let block1 = Block {
+            header: header1,
+            transactions: Vec::new(),
+        };
+        let block2 = Block {
+            header: header2,
+            transactions: Vec::new(),
+        };
+
+        let h1 = block1.hash();
+        let h2 = block2.hash();
+
+        assert_ne!(h1, h2, "changing header.number should change block hash");
+    }
+
+    #[test]
+    fn block_hash_is_stable_for_same_header() {
+        let header = BlockHeader {
+            number: 42,
+            parent_hash: "0xdeadbeef".to_string(),
+            timestamp: Utc::now(),
+            tx_count: 0,
+            transactions_root: "0x00".to_string(),
+            state_root: None,
+            gas_used: None,
+            gas_limit: Some(30_000_000),
+            receipts_root: None,
+        };
+        let block = Block {
+            header,
+            transactions: Vec::new(),
+        };
+
+        let h1 = block.hash();
+        let h2 = block.hash();
+        assert_eq!(h1, h2, "same block header should produce stable hash");
+    }
+
+    #[test]
+    fn block_tx_count_matches_transactions_len() {
+        let header = BlockHeader {
+            number: 1,
+            parent_hash: "0x0".to_string(),
+            timestamp: Utc::now(),
+            tx_count: 2,
+            transactions_root: "0x00".to_string(),
+            state_root: None,
+            gas_used: None,
+            gas_limit: Some(30_000_000),
+            receipts_root: None,
+        };
+
+        let tx1 = Transaction {
+            from: "0x0000000000000000000000000000000000000001".to_string(),
+            to: Some("0x0000000000000000000000000000000000000002".to_string()),
+            value: "0x1".to_string(),
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: None,
+            gas_price: None,
+            chain_id: None,
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        let tx2 = Transaction { nonce: "0x1".to_string(), ..tx1.clone() };
+
+        let block = Block {
+            header,
+            transactions: vec![tx1, tx2],
+        };
+
+        assert_eq!(block.header.tx_count, block.transactions.len());
+        assert_eq!(block.tx_count(), block.transactions.len());
     }
 }

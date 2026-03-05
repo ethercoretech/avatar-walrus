@@ -216,7 +216,8 @@ impl BlockExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::schema::BlockHeader;
+    use crate::schema::{BlockHeader, Account, Transaction};
+    use crate::db::StateDatabase;
     use chrono::Utc;
     use tempfile::TempDir;
     
@@ -501,5 +502,76 @@ mod tests {
         println!("   - 失败交易: {}", result.failed_txs);
         println!("   - 总 Gas 使用: {} (超过区块限制 50000)", result.total_gas_used);
         println!("   - 说明：这是预期行为，应在选择阶段过滤超限交易");
+    }
+
+    #[tokio::test]
+    async fn test_block_execution_updates_state_and_state_root() {
+        use alloy_primitives::{address, U256};
+
+        // 1. 创建临时数据库并初始化一个账户
+        let (mut db, _temp_dir) = create_test_db();
+        let from = address!("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266");
+        let mut account = Account::with_balance(U256::from(10_000_000_000_000_000_000u64)); // 10 ETH
+        account.nonce = 0;
+        db.set_account(&from, account).unwrap();
+
+        let mut executor = BlockExecutor::new(db);
+
+        // 2. 构建包含一笔简单转账交易的区块
+        let tx = Transaction {
+            from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266".to_string(),
+            to: Some("0x70997970C51812dc3A010C7d01b50e0d17dc79C8".to_string()),
+            value: "0x1".to_string(),        // 极小值即可，重点在状态变化
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),       // 21000
+            nonce: "0x0".to_string(),
+            hash: Some("0xtransfer".to_string()),
+            gas_price: None,
+            chain_id: None,
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+
+        let block = Block {
+            header: BlockHeader {
+                number: 1,
+                parent_hash: "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    .to_string(),
+                timestamp: Utc::now(),
+                tx_count: 1,
+                transactions_root: "0x".to_string(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(30_000_000),
+                receipts_root: None,
+            },
+            transactions: vec![tx],
+        };
+
+        // 3. 执行区块并检查执行结果
+        let result = executor.execute_block(&block).await.unwrap();
+        assert_eq!(result.successful_txs, 1);
+        assert_eq!(result.failed_txs, 0);
+        assert!(result.total_gas_used > 0);
+        assert!(
+            result.receipts.contains_key("0xtransfer"),
+            "receipt for tx hash should be present"
+        );
+
+        // 4. 计算状态根，应当不是空状态根
+        let state_root = executor.calculate_state_root().unwrap();
+        assert_ne!(
+            state_root,
+            crate::trie::state_root::EMPTY_STATE_ROOT,
+            "state root should change after executing a stateful tx"
+        );
+
+        // 5. 校验账户 nonce 已增加（体现交易执行对状态的影响）
+        let db_ref = executor.db_mut();
+        let acc_after = db_ref
+            .get_account(&from)
+            .unwrap()
+            .expect("account should exist after execution");
+        assert_eq!(acc_after.nonce, 1, "account nonce should be incremented");
     }
 }

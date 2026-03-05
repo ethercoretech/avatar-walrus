@@ -46,3 +46,7 @@ sha2 = "0.10"
 
 # 以太坊类型
 alloy-primitives = { version = "0.7", features = ["serde"] }
+
+[dev-dependencies]
+tempfile = "3"
+chrono = "0.4"

@@ -415,6 +415,103 @@ impl WalrusRpcServer {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+    use alloy_primitives::{address, U256};
+
+    fn make_test_server(state_db_path: &str) -> WalrusRpcServer {
+        WalrusRpcServer::new(
+            "127.0.0.1:0".to_string(),      // walrus_addr (不会真正连接)
+            "blockchain-txs".to_string(),   // topic
+            10,                              // max_concurrent_requests
+            Duration::from_millis(10),       // batch_interval
+            10,                              // max_batch_size
+            Duration::from_secs(5),          // request_timeout
+            false,                           // enable_batching
+            state_db_path.to_string(),
+            31337,                           // chain_id
+        )
+    }
+
+    #[tokio::test]
+    async fn test_get_transaction_count_reads_nonce_from_state_db() {
+        // 1. 准备一个临时状态库，写入账户 nonce=3
+        let dir = TempDir::new().unwrap();
+        let db_path = dir.path().join("state.redb");
+        let addr = address!("0000000000000000000000000000000000000001");
+        {
+            let mut db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+            let mut acc = block_producer::schema::Account::with_balance(U256::from(1000u64));
+            acc.nonce = 3;
+            db.set_account(&addr, acc).unwrap();
+        }
+
+        // 2. 构造 RPC server，指向该只读 DB
+        let server = make_test_server(db_path.to_str().unwrap());
+        let addr_hex = format!("0x{}", hex::encode(addr.as_slice()));
+
+        // 3. 调用 handler，并检查返回的 nonce 是否为 0x3
+        let nonce_hex = server
+            .get_transaction_count(addr_hex, None)
+            .await
+            .expect("rpc should succeed");
+        assert_eq!(nonce_hex, "0x3");
+    }
+
+    #[tokio::test]
+    async fn test_chain_id_returns_configured_value() {
+        let server = make_test_server("./non-existent.redb");
+        let chain_id_hex = server.chain_id().await.expect("rpc should succeed");
+        assert_eq!(chain_id_hex, "0x7a69"); // 31337 in hex
+    }
+
+    #[tokio::test]
+    async fn test_block_number_uses_highest_persisted_block() {
+        use block_producer::schema::{BlockHeader, Block};
+        use chrono::Utc;
+
+        let dir = TempDir::new().unwrap();
+        let db_path = dir.path().join("state.redb");
+        {
+            let db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+            // 保存两个连续区块：#0 和 #1
+            let header0 = BlockHeader {
+                number: 0,
+                parent_hash: "0x0".into(),
+                timestamp: Utc::now(),
+                tx_count: 0,
+                transactions_root: "0x00".into(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(30_000_000),
+                receipts_root: None,
+            };
+            let block0 = Block { header: header0, transactions: Vec::new() };
+            db.save_block(&block0).unwrap();
+
+            let header5 = BlockHeader {
+                number: 1,
+                parent_hash: block0.hash(),
+                timestamp: Utc::now(),
+                tx_count: 0,
+                transactions_root: "0x00".into(),
+                state_root: None,
+                gas_used: None,
+                gas_limit: Some(30_000_000),
+                receipts_root: None,
+            };
+            let block5 = Block { header: header5, transactions: Vec::new() };
+            db.save_block(&block5).unwrap();
+        }
+
+        let server = make_test_server(db_path.to_str().unwrap());
+        let bn_hex = server.block_number().await.expect("rpc should succeed");
+        assert_eq!(bn_hex, "0x1");
+    }
+}
+
 #[async_trait]
 impl WalrusRpcApiServer for WalrusRpcServer {
     async fn send_transaction(

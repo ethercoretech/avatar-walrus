@@ -83,7 +83,7 @@ impl StorageChange {
 mod tests {
     use super::*;
     use alloy_primitives::address;
-    
+
     #[test]
     fn test_storage_slot() {
         let addr = address!("0000000000000000000000000000000000000001");
@@ -120,5 +120,26 @@ mod tests {
         // 无变更
         let change4 = StorageChange::new(addr, U256::from(1), U256::from(100), U256::from(100));
         assert!(!change4.is_changed());
+    }
+
+    #[test]
+    fn hashed_key_is_stable_and_32_bytes() {
+        let addr = address!("0000000000000000000000000000000000000001");
+        let slot1 = StorageSlot::new(addr, U256::from(42), U256::from(1));
+        let slot2 = StorageSlot::new(addr, U256::from(42), U256::from(2));
+
+        let h1 = slot1.hashed_key();
+        let h2 = slot2.hashed_key();
+
+        // 长度固定为 32 字节
+        assert_eq!(h1.len(), 32);
+        assert_eq!(h2.len(), 32);
+        // 相同 key 产生相同哈希（与 value 无关）
+        assert_eq!(h1, h2);
+
+        // 不同 key 产生不同哈希（概率上应不同）
+        let slot3 = StorageSlot::new(addr, U256::from(43), U256::from(1));
+        let h3 = slot3.hashed_key();
+        assert_ne!(h1, h3);
     }
 }

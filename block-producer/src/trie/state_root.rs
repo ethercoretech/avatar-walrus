@@ -125,6 +125,7 @@ pub const EMPTY_STATE_ROOT: B256 = B256::new([
 mod tests {
     use super::*;
     use crate::db::RedbStateDB;
+    use alloy_primitives::{address, U256};
     use tempfile::TempDir;
     
     #[test]
@@ -138,5 +139,35 @@ mod tests {
         
         // 空状态应该返回空状态根
         assert_eq!(root, EMPTY_STATE_ROOT);
+    }
+
+    #[test]
+    fn test_state_root_changes_with_accounts_and_storage() {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let mut db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+
+        // 开启事务以便 changed_accounts 能够追踪到
+        db.begin_transaction().unwrap();
+
+        let addr1 = address!("0000000000000000000000000000000000000001");
+        let addr2 = address!("0000000000000000000000000000000000000002");
+
+        // 写入两个账户和一些存储
+        db.set_account(&addr1, crate::schema::Account::with_balance(U256::from(100))).unwrap();
+        db.set_account(&addr2, crate::schema::Account::with_balance(U256::from(200))).unwrap();
+        db.set_storage(&addr1, U256::from(1), U256::from(10)).unwrap();
+        db.set_storage(&addr2, U256::from(2), U256::from(20)).unwrap();
+
+        let root1 = StateRootCalculator::new(&db).calculate_incremental().unwrap();
+        assert_ne!(root1, EMPTY_STATE_ROOT);
+
+        // 修改一个账户的余额与存储，根应发生变化
+        db.set_account(&addr1, crate::schema::Account::with_balance(U256::from(300))).unwrap();
+        db.set_storage(&addr1, U256::from(1), U256::from(30)).unwrap();
+        let root2 = StateRootCalculator::new(&db).calculate_incremental().unwrap();
+        assert_ne!(root1, root2);
+
+        db.commit_transaction().unwrap();
     }
 }

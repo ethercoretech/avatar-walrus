@@ -573,6 +573,13 @@ mod tests {
         // 测试默认值
         let non_existent = db.get_storage(&addr, U256::from(999)).unwrap();
         assert_eq!(non_existent, U256::ZERO);
+        
+        // get_all_storage 应该返回一个非空列表并包含刚写入的槽位
+        let mut all = db.get_all_storage(&addr).unwrap();
+        all.sort_by_key(|slot| slot.key);
+        assert!(!all.is_empty());
+        assert_eq!(all[0].key, key);
+        assert_eq!(all[0].value, value);
     }
     
     #[test]
@@ -639,5 +646,70 @@ mod tests {
         assert!(changed.contains(&addr2));
         
         db.commit_transaction().unwrap();
+    }
+
+    #[test]
+    fn test_code_crud() {
+        use alloy_primitives::keccak256;
+
+        let (mut db, _temp_dir) = create_test_db();
+        let code = Bytes::from(vec![0x60, 0x01, 0x60, 0x00, 0x52]); // 简单的 EVM bytecode 片段
+        let hash = keccak256(code.as_ref());
+
+        // 初始应为 None
+        assert!(db.get_code(&hash).unwrap().is_none());
+
+        // 设置代码
+        db.set_code(hash, code.clone()).unwrap();
+
+        // 可以读回相同字节码
+        let retrieved = db.get_code(&hash).unwrap().expect("code should exist");
+        assert_eq!(retrieved, code);
+    }
+
+    #[test]
+    fn test_block_and_block_hash_crud() {
+        use crate::schema::{BlockHeader, Block};
+        use chrono::Utc;
+
+        let (db, _temp_dir) = create_test_db();
+        let mut db = db;
+
+        // 构造一个简单区块
+        let header = BlockHeader {
+            number: 1,
+            parent_hash: "0x0".to_string(),
+            timestamp: Utc::now(),
+            tx_count: 0,
+            transactions_root: "0x00".to_string(),
+            state_root: None,
+            gas_used: None,
+            gas_limit: Some(30_000_000),
+            receipts_root: None,
+        };
+        let block = Block {
+            header,
+            transactions: Vec::new(),
+        };
+
+        // 将区块哈希的 0x 开头十六进制字符串解析为 B256
+        let hash_str = block.hash();
+        let hash_hex = hash_str.trim_start_matches("0x");
+        let hash_bytes = hex::decode(hash_hex).expect("valid hex block hash");
+        let hash = B256::from_slice(&hash_bytes);
+
+        // 初始应无区块和区块哈希
+        assert!(db.get_block(1).unwrap().is_none());
+        assert!(db.get_block_hash(1).unwrap().is_none());
+
+        // 保存区块与区块哈希
+        db.save_block(&block).unwrap();
+        db.set_block_hash(1, hash).unwrap();
+
+        // 可以读回区块与哈希
+        let got_block = db.get_block(1).unwrap().expect("block should exist");
+        assert_eq!(got_block.header.number, 1);
+        let got_hash = db.get_block_hash(1).unwrap().expect("block hash should exist");
+        assert_eq!(got_hash, hash);
     }
 }

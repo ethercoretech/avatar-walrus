@@ -87,7 +87,7 @@ pub const EMPTY_STORAGE_ROOT: B256 = B256::new([
 mod tests {
     use super::*;
     use crate::db::RedbStateDB;
-    use alloy_primitives::address;
+    use alloy_primitives::{address, U256};
     use tempfile::TempDir;
     
     #[test]
@@ -102,5 +102,32 @@ mod tests {
         
         // 空存储应该返回空存储根
         assert_eq!(root, EMPTY_STORAGE_ROOT);
+    }
+
+    #[test]
+    fn test_storage_root_changes_with_slots() {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.redb");
+        let mut db = RedbStateDB::new(db_path.to_str().unwrap()).unwrap();
+        let addr = address!("0000000000000000000000000000000000000001");
+
+        // 初始为空存储根
+        let empty_root = StorageRootCalculator::new(&db).calculate(&addr).unwrap();
+        assert_eq!(empty_root, EMPTY_STORAGE_ROOT);
+
+        // 写入一个 non-zero 槽位
+        db.set_storage(&addr, U256::from(1), U256::from(100)).unwrap();
+        let root1 = StorageRootCalculator::new(&db).calculate(&addr).unwrap();
+        assert_ne!(root1, EMPTY_STORAGE_ROOT);
+
+        // 再写入第二个槽位，根应发生变化
+        db.set_storage(&addr, U256::from(2), U256::from(200)).unwrap();
+        let root2 = StorageRootCalculator::new(&db).calculate(&addr).unwrap();
+        assert_ne!(root1, root2);
+
+        // 将第二个槽位改回 0（等价删除），根应回到单槽位状态
+        db.set_storage(&addr, U256::from(2), U256::ZERO).unwrap();
+        let root3 = StorageRootCalculator::new(&db).calculate(&addr).unwrap();
+        assert_eq!(root1, root3);
     }
 }

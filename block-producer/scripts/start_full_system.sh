@@ -6,7 +6,7 @@
 set -e
 
 # 配置
-PROJECT_ROOT="/opt/rust/project/avatar-walrus"
+PROJECT_ROOT="/home/ubuntu/RustSpace/company/avatar-walrus"
 SCRIPTS_DIR="$PROJECT_ROOT/block-producer/scripts"
 
 # 颜色输出

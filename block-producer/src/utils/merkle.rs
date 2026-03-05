@@ -128,4 +128,28 @@ mod tests {
         
         assert_ne!(root1, root2);
     }
+
+    #[test]
+    fn test_merkle_root_with_real_transactions() {
+        use crate::schema::Transaction;
+
+        let tx1 = Transaction {
+            from: "0x0000000000000000000000000000000000000001".to_string(),
+            to: Some("0x0000000000000000000000000000000000000002".to_string()),
+            value: "0x1".to_string(),
+            data: "0x".to_string(),
+            gas: "0x5208".to_string(),
+            nonce: "0x0".to_string(),
+            hash: None,
+            gas_price: None,
+            chain_id: None,
+            max_fee_per_gas: None,
+            max_priority_fee_per_gas: None,
+        };
+        let tx2 = Transaction { nonce: "0x1".to_string(), ..tx1.clone() };
+
+        let root = calculate_merkle_root(&[tx1, tx2]);
+        assert_ne!(root, B256::ZERO);
+        assert_ne!(root, EMPTY_ROOT_HASH);
+    }
 }

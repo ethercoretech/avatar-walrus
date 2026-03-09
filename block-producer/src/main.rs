@@ -197,11 +197,12 @@ impl BlockProducer {
             transactions,
         };
     
-        // 5. 提交给执行层（会更新 state_root 和 gas_used）
-        self.submit_to_execution_layer(&mut block).await?;
+        // 5. 提交给执行层（会更新 state_root / roots / gas_used，并返回“落盘版本”的区块哈希）
+        let persisted_hash = self.submit_to_execution_layer(&mut block).await?;
     
         // 6. 更新状态
-        self.last_block_hash = block.hash();
+        // 使用“最终落盘版本”的 hash，确保 parent_hash 与数据库中前序区块 hash 一致
+        self.last_block_hash = persisted_hash;
         self.current_block_number += 1;
     
         Ok(block)
@@ -396,7 +397,7 @@ impl BlockProducer {
     }
 
     /// 提交区块给执行层
-    async fn submit_to_execution_layer(&self, block: &mut Block) -> Result<()> {
+    async fn submit_to_execution_layer(&self, block: &mut Block) -> Result<String> {
         info!("📦 提交区块 #{} 到执行层...", block.header.number);
         
         use block_producer::db::RedbStateDB;
@@ -412,7 +413,8 @@ impl BlockProducer {
         let mut executor = BlockExecutor::new(state_db);
         
         // 3. 转换区块格式（从旧格式到新格式）
-        let schema_block = self.convert_to_schema_block(block)?;
+        // 注意：schema_block 会被持久化到 DB，因此在计算出 roots 后需要同步更新其 header。
+        let mut schema_block = self.convert_to_schema_block(block)?;
         
         // 4. 执行区块
         let execution_result = executor.execute_block(&schema_block).await
@@ -439,7 +441,13 @@ impl BlockProducer {
         block.header.transactions_root = format!("0x{}", hex::encode(transactions_root.as_slice()));
         block.header.receipts_root = Some(format!("0x{}", hex::encode(receipts_root.as_slice())));
         
-        // 9. 持久化区块到数据库
+        // 9. 将执行后更新的区块头同步回 schema_block（保证 hash/parent_hash 链与落盘一致）
+        schema_block.header.transactions_root = block.header.transactions_root.clone();
+        schema_block.header.state_root = block.header.state_root.clone();
+        schema_block.header.gas_used = block.header.gas_used;
+        schema_block.header.receipts_root = block.header.receipts_root.clone();
+
+        // 10. 持久化区块到数据库（保存“最终版本”的 header）
         executor.db_mut().save_block(&schema_block)
             .map_err(|e| anyhow::anyhow!("Failed to save block: {}", e))?;
         
@@ -449,7 +457,7 @@ impl BlockProducer {
         info!("   ✓ 状态根: 0x{}", hex::encode(state_root.as_slice()));
         info!("   ✓ Gas 使用: {}", execution_result.total_gas_used);
         
-        Ok(())
+        Ok(schema_block.hash())
     }
     
     /// 转换区块格式

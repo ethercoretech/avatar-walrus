@@ -13,6 +13,144 @@
 - **Bloom 过滤器**：仅有字段和占位实现，未真实计算 Bloom 位图。
 - **数据库 Schema（Redb）**：账户 / 存储 / 代码 / 区块 / 区块哈希五类表设计清晰，并附带事务缓冲与变更追踪。
 - **基础 RPC 接口**：已覆盖交易提交与部分链信息查询，但尚未达到「通用 EVM 节点」常见 RPC 完整度。
+- **单节点流程已串通（可复现）**：通过 `start_full_system.sh` 启动全系统后，使用 `tx-generator` 的 `full-flow-test` 发送“转账 + 合约部署”，可观测到：
+  - Walrus topic 收到交易、Block Producer 拉取并出块（至少 2 个区块）
+  - 执行后写入状态库（Redb），并能 dump 出合约 storage slots（slot 有变化且持久化）
+  - 区块 `parent_hash` 与前序区块 hash 一致，形成链式结构（`state-inspect blocks` 显示 `link=OK`）
+
+---
+
+### 2. 流程测试（单节点，端到端串通）
+
+> 要求：**单元测试/集成测试暂停，不再新增测试代码**；此处为功能/流程测试与验收步骤。  
+> 目标：串通 `生成/构造交易 → 发送交易 → 接收交易 → 打包/执行区块(体执行→头构建) → slot 变化/存储 → 多区块链式结构`。
+
+#### 2.1 入口与工具
+
+- **系统启动脚本**：`block-producer/scripts/start_full_system.sh`
+  - 启动：`./scripts/start_full_system.sh start`
+  - 停止并清理：`./scripts/start_full_system.sh stop`
+- **交易发送（完整流程）**：`tx-generator` 新增命令 `full-flow-test`
+  - 位置：`tx-generator/src/main.rs`
+  - 作用：发送 `eth_sendTransaction`（JSON 交易）两笔交易（转账 + 合约部署），并调用 `state-inspect` 做链与 slot 验收
+- **链/状态检查工具**：`block-producer/src/bin/state-inspect.rs`
+  - `state-inspect blocks`：列出区块并校验 `parent_hash` 链
+  - `state-inspect storage`：按地址 dump storage slots
+
+#### 2.2 测试步骤（推荐一键流程）
+
+1. **启动全系统**
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/block-producer
+./scripts/start_full_system.sh start
+```
+
+2. **编译并运行完整流程测试**
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/tx-generator
+cargo run --bin tx-generator -- full-flow-test \
+  --rpc-url http://127.0.0.1:8545 \
+  --timeout-secs 120 \
+  --poll-interval-ms 500 \
+  --state-inspect-path /home/ubuntu/RustSpace/company/avatar-walrus/block-producer/target/release/state-inspect
+```
+
+> 说明：  
+> - `full-flow-test` 使用 block-producer 的内置测试账户 `0xf39F...2266`（有初始余额）  
+> - 先发转账，再发合约部署（默认使用 `block-producer/scripts/contracts/MiniUSDT.json` 的 `bytecode`）  
+> - “是否出块”的判定以 **状态库（Redb）中的区块数量增长**为准（调用 `state-inspect blocks`），避免仅依赖 `eth_blockNumber` 的可观测差异  
+
+3. **验收：链式结构（多个区块）**
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/block-producer
+./target/release/state-inspect --db-path ./data/block_producer_state_blockchain-txs.redb blocks --from 0 --limit 20
+```
+
+预期：看到 `#0/#1/...` 多个区块，并且从 `#1` 起出现 `link=OK`（即 `parent_hash == 前一区块 hash`）。
+
+4. **验收：slot 是否变化、如何存储**
+
+- **slot 的含义**：这里的 slot 指 EVM 合约存储槽（storage slot）。  
+- **落盘位置**：`block-producer/src/db/redb_db.rs` 的 `STORAGE_TABLE`：  
+  \((address(20 bytes), key(32 bytes)) \rightarrow value(32 bytes)\)
+- **检查方式**：`full-flow-test` 会推导合约地址（CREATE 地址规则：`keccak256(rlp([from, nonce]))[12..]`）并 dump：  
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/block-producer
+./target/release/state-inspect --db-path ./data/block_producer_state_blockchain-txs.redb storage --address 0x<合约地址>
+```
+
+预期：输出 `slots=N` 且包含多条非零 `(key,value)`，证明执行引起的 slot 变更已持久化。
+
+5. **扩展流程 1：合约调用导致 slot 二次变化（call-flow-test）**
+
+> 用于证明「部署后再次调用合约，会驱动 storage 二次迁移」。
+
+运行命令：
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/tx-generator
+cargo run --bin tx-generator -- call-flow-test \
+  --rpc-url http://127.0.0.1:8545 \
+  --timeout-secs 120 \
+  --poll-interval-ms 500 \
+  --state-inspect-path /home/ubuntu/RustSpace/company/avatar-walrus/block-producer/target/release/state-inspect
+```
+
+5.1 **预期现象（人工比对）**：
+
+- 程序会打印：
+  - `=== state-inspect storage (before mint call) ===`
+  - `=== state-inspect storage (after successful mint call) ===`
+- 对比这两段输出，可观察到同一合约地址下的某些 `(key, value)` 发生变化（例如某个余额 slot、totalSupply 对应的 slot），说明：
+  - 合约部署后的初始状态被持久化；
+  - 后续合约调用（`mint`）会再次驱动存储变化并正确落盘。
+
+6. **扩展流程 2：失败 / 回滚与 nonce 错误（failure-flow-test）**
+
+> 用于证明「执行失败 / nonce 错误不会脏写状态」，覆盖两类典型路径：  
+> 1）EVM 内部 revert；2）交易 nonce 处理。
+
+运行命令：
+
+```bash
+cd /home/ubuntu/RustSpace/company/avatar-walrus/tx-generator
+cargo run --bin tx-generator -- failure-flow-test \
+  --rpc-url http://127.0.0.1:8545 \
+  --timeout-secs 120 \
+  --poll-interval-ms 500 \
+  --state-inspect-path /home/ubuntu/RustSpace/company/avatar-walrus/block-producer/target/release/state-inspect
+```
+
+6.1 **覆盖路径 A：revert 不改 slot**
+
+- 程序会打印两段对比：
+  - `=== state-inspect storage (after deploy) ===`
+  - `=== state-inspect storage (after revert call, expect NO CHANGE) ===`
+- 预期：两段输出在 slot 维度一致，说明：
+  - 非 owner 调用 `mint` 时，交易在 EVM 内部 revert；
+  - revert 路径不会脏写 storage。
+
+6.2 **覆盖路径 B：重复 nonce 不再额外改变 slot**
+
+- 程序会继续打印：
+  - `=== state-inspect storage (after valid nonce mint) ===`
+  - `=== state-inspect storage (after duplicate nonce tx, expect NO EXTRA CHANGE) ===`
+- 同时日志中会根据实现情况显示：
+  - 要么重复 nonce 被 RPC 直接拒绝；
+  - 要么被 RPC 接受但由执行层丢弃 / 不再生效。
+- 预期：`after duplicate nonce tx` 与 `after valid nonce mint` 输出一致，说明：
+  - 正常 nonce 的交易成功驱动一次状态变更；
+  - 后续相同 nonce 的重复交易不会重复驱动状态迁移。
+
+#### 2.3 关于 “生成密钥 → 构造交易”
+
+- `tx-generator generate-key` 仍可用于随机生成密钥对（用于压测/演示）。  
+- **完整流程测试为保证与 block-producer 解析一致**，使用 `eth_sendTransaction` 的 JSON 交易结构体（而非 raw tx）。  
+  - raw tx（`eth_sendRawTransaction`）与 block-producer 当前的交易解析格式不同，若要同时支持需在 block-producer 增强 raw tx 解码（非本次流程测试目标）。
 
 ---
 
@@ -261,4 +399,25 @@ Redb Schema 覆盖了 EVM 状态的核心维度（账户、存储、代码、区
    - 提供简单的 CLI 工具用于：
      - Dump 指定账户状态（balance/nonce/code_hash/storage 根）。
      - Dump 指定区块及其 4 个根与收据摘要。
+
+---
+
+### 9. 单元测试（暂停新增）
+
+> 现状：本仓库已有单元测试覆盖关键模块；**按当前约束，单测/集测都暂停，不再新增**。  
+> 用途：当需要回归时，以下命令可用于快速验证核心逻辑未被破坏。
+
+- **区块/交易 schema**：`block-producer/src/schema/block.rs`
+  - `cargo test schema::block::tests`
+- **执行层**：`block-producer/src/executor/block_executor.rs`、`block-producer/src/executor/revm_adapter.rs`
+  - `cargo test executor::block_executor::tests`
+  - `cargo test executor::revm_adapter::tests`
+- **Trie / Merkle**：`block-producer/src/trie/*`、`block-producer/src/utils/merkle.rs`
+  - `cargo test trie::storage_root::tests`
+  - `cargo test trie::state_root::tests`
+  - `cargo test utils::merkle::tests`
+- **Redb DB**：`block-producer/src/db/redb_db.rs`
+  - `cargo test db::redb_db::tests`
+- **RPC Gateway（只读查询与基础接口）**：`rpc-gateway/src/main.rs`
+  - `cargo test`
 
